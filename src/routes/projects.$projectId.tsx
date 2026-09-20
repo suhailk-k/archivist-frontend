@@ -30,6 +30,8 @@ function ProjectDetail() {
   const { db } = store;
   const [tab, setTab] = useState<Tab>("Overview");
   const [editOpen, setEditOpen] = useState(false);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
   const [newMemberOpen, setNewMemberOpen] = useState(false);
   const [newMemberForm, setNewMemberForm] = useState({ name: "", role: "", email: "" });
 
@@ -52,6 +54,7 @@ function ProjectDetail() {
   }
 
   const members = db.members.filter((m) => m.orgId === project.orgId);
+  const assignedMembers = members.filter((m) => project.memberIds.includes(m.id));
   const tasks = db.tasks.filter((t) => t.projectId === project.id);
   const milestones = db.milestones.filter((m) => m.projectId === project.id).sort((a, b) => a.date.localeCompare(b.date));
   const meetings = db.meetings.filter((m) => m.projectId === project.id).sort((a, b) => a.date.localeCompare(b.date));
@@ -217,47 +220,47 @@ function ProjectDetail() {
                   <div>
                     <div className="font-display text-[16px] font-medium">Team</div>
                     <div className="font-mono text-[10px] text-ink-soft">
-                      {project.memberIds.length} assigned · {members.length} in organisation
+                      {assignedMembers.length} assigned · {members.length} in organisation
                     </div>
                   </div>
-                  <PrimaryButton
-                    onClick={() => {
-                      setNewMemberForm({ name: "", role: "", email: "" });
-                      setNewMemberOpen(true);
-                    }}
-                  >
-                    + New member
-                  </PrimaryButton>
+                  <div className="flex flex-wrap gap-2">
+                    <GhostButton onClick={() => setAddMemberOpen(true)}>
+                      + Add member
+                    </GhostButton>
+                    <PrimaryButton
+                      onClick={() => {
+                        setNewMemberForm({ name: "", role: "", email: "" });
+                        setNewMemberOpen(true);
+                      }}
+                    >
+                      + New member
+                    </PrimaryButton>
+                  </div>
                 </div>
-                {members.map((m) => {
-                  const on = project.memberIds.includes(m.id);
-                  return (
-                    <div key={m.id} className="flex items-center gap-3 rounded-xl border border-line bg-paper/40 px-3 py-2.5">
-                      <div className="grid size-8 place-items-center rounded-full bg-accent-soft font-mono text-[11px] text-accent">
-                        {m.name.slice(0, 1)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-[13px] font-medium">{m.name}</div>
-                        <div className="font-mono text-[10px] text-ink-soft">{m.role}</div>
-                      </div>
-                      <div className="ml-auto">
-                        <GhostButton
-                          onClick={() => {
-                            store.updateProject(project.id, {
-                              memberIds: on
-                                ? project.memberIds.filter((x) => x !== m.id)
-                                : [...project.memberIds, m.id],
-                            });
-                            toast.success(on ? `${m.name} removed from project` : `${m.name} added to project`);
-                          }}
-                        >
-                          {on ? "Remove" : "Add to project"}
-                        </GhostButton>
-                      </div>
+                {assignedMembers.map((m) => (
+                  <div key={m.id} className="flex items-center gap-3 rounded-xl border border-line bg-paper/40 px-3 py-2.5">
+                    <div className="grid size-8 place-items-center rounded-full bg-accent-soft font-mono text-[11px] text-accent">
+                      {m.name.slice(0, 1)}
                     </div>
-                  );
-                })}
-                {members.length === 0 ? <Empty text="No people in this organisation yet" /> : null}
+                    <div className="min-w-0">
+                      <div className="truncate text-[13px] font-medium">{m.name}</div>
+                      <div className="font-mono text-[10px] text-ink-soft">{m.role}</div>
+                    </div>
+                    <div className="ml-auto">
+                      <GhostButton
+                        onClick={() => {
+                          store.updateProject(project.id, {
+                            memberIds: project.memberIds.filter((x) => x !== m.id),
+                          });
+                          toast.success(`${m.name} removed from project`);
+                        }}
+                      >
+                        Remove
+                      </GhostButton>
+                    </div>
+                  </div>
+                ))}
+                {assignedMembers.length === 0 ? <Empty text="No project team members yet" /> : null}
               </div>
             ) : null}
 
@@ -271,20 +274,90 @@ function ProjectDetail() {
       </div>
 
       <EditProjectModal open={editOpen} onClose={() => setEditOpen(false)} projectId={project.id} />
-      <Modal open={newMemberOpen} title="Add new project member" onClose={() => setNewMemberOpen(false)}>
+      <Modal open={addMemberOpen} title="Add member to project" onClose={() => setAddMemberOpen(false)}>
+        <div className="space-y-3">
+          <Field label="Organisation members">
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              {members
+                .filter((member) => !project.memberIds.includes(member.id))
+                .map((member) => (
+                  <button
+                    key={member.id}
+                    type="button"
+                    onClick={() => setSelectedMemberId(member.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
+                      selectedMemberId === member.id
+                        ? "border-accent bg-accent/10 ring-1 ring-accent/50"
+                        : "border-line bg-paper/40 hover:border-accent/60 hover:bg-panel/70"
+                    }`}
+                  >
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-mono text-[11px] text-accent">
+                      {member.name.slice(0, 1)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-[13px] font-medium text-ink">{member.name}</span>
+                      <span className="block truncate font-mono text-[10px] text-ink-soft">
+                        {member.role || "No role set"}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              {members.every((member) => project.memberIds.includes(member.id)) ? (
+                <p className="font-mono text-[10.5px] text-ink-soft">All organisation members are already on this project.</p>
+              ) : null}
+            </div>
+          </Field>
+          <button
+            type="button"
+            className="font-mono text-[10.5px] text-accent hover:underline"
+            onClick={() => {
+              setAddMemberOpen(false);
+              setNewMemberForm({ name: "", role: "", email: "" });
+              setNewMemberOpen(true);
+            }}
+          >
+            New person not listed? Add organisation member →
+          </button>
+          <div className="flex justify-end gap-2 pt-1">
+            <GhostButton onClick={() => setAddMemberOpen(false)}>Cancel</GhostButton>
+            <PrimaryButton
+              onClick={() => {
+                if (!selectedMemberId) {
+                  toast.error("Choose a member first");
+                  return;
+                }
+                const member = members.find((item) => item.id === selectedMemberId);
+                if (!member || project.memberIds.includes(member.id)) {
+                  toast.error("Member is already on this project");
+                  return;
+                }
+                store.updateProject(project.id, {
+                  memberIds: [...project.memberIds, member.id],
+                });
+                toast.success(`${member.name} added to project`);
+                setSelectedMemberId("");
+                setAddMemberOpen(false);
+              }}
+            >
+              Add to project
+            </PrimaryButton>
+          </div>
+        </div>
+      </Modal>
+      <Modal open={newMemberOpen} title="Add new organisation member" onClose={() => setNewMemberOpen(false)}>
         <div className="space-y-3">
           <Field label="Name">
             <TextInput
               autoFocus
               value={newMemberForm.name}
-              onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
+              onChange={(event) => setNewMemberForm({ ...newMemberForm, name: event.target.value })}
               placeholder="Full name"
             />
           </Field>
           <Field label="Role">
             <TextInput
               value={newMemberForm.role}
-              onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value })}
+              onChange={(event) => setNewMemberForm({ ...newMemberForm, role: event.target.value })}
               placeholder="Design lead"
             />
           </Field>
@@ -292,7 +365,7 @@ function ProjectDetail() {
             <TextInput
               type="email"
               value={newMemberForm.email}
-              onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
+              onChange={(event) => setNewMemberForm({ ...newMemberForm, email: event.target.value })}
               placeholder="name@example.com"
             />
           </Field>
