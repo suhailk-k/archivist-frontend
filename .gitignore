@@ -1,0 +1,9 @@
+node_modules/
+.yarn/
+.DS_Store
+.env
+.env.*
+!.env.example
+dist/
+.output/
+.superpowers/
