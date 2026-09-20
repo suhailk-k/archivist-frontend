@@ -177,7 +177,7 @@ export function PrimaryButton({
     <button
       type={type}
       onClick={onClick}
-      className="inline-flex h-9 items-center rounded-lg bg-ink px-4 text-[12.5px] font-medium text-paper transition-all hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70"
+      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70"
     >
       {children}
     </button>
