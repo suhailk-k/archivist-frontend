@@ -29,18 +29,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-paper text-ink antialiased selection:bg-accent/15">
+    <div className="min-h-screen bg-paper text-ink antialiased selection:bg-accent/30">
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 left-1/4 size-[520px] rounded-full bg-accent/10 blur-[120px]" />
-        <div className="absolute top-24 -right-24 size-[420px] rounded-full bg-verd/10 blur-[120px]" />
-        <div className="absolute bottom-0 left-10 size-[360px] rounded-full bg-amber/[0.08] blur-[120px]" />
+        <div className="absolute -top-40 left-1/4 size-[520px] rounded-full bg-accent/15 blur-[140px]" />
+        <div className="absolute top-24 -right-24 size-[420px] rounded-full bg-verd/8 blur-[140px]" />
+        <div className="absolute bottom-0 left-10 size-[360px] rounded-full bg-amber/6 blur-[140px]" />
       </div>
 
       <div className="mx-auto flex max-w-[1520px]">
-        <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col border-r border-line/80 bg-panel/70 backdrop-blur-xl md:flex">
+        <aside className="sticky top-0 hidden h-screen w-[264px] shrink-0 flex-col border-r border-line/80 bg-panel/85 shadow-[12px_0_40px_-30px_rgba(0,0,0,0.8)] backdrop-blur-xl md:flex">
           <div className="px-5 pt-5 pb-4">
-            <Link to="/" className="flex items-center gap-2.5">
-              <div className="grid size-8 place-items-center rounded-lg bg-ink font-display text-[15px] italic text-paper">A</div>
+            <Link to="/" className="flex items-center gap-2.5 rounded-lg focus-visible:ring-2 focus-visible:ring-accent/70">
+              <div className="grid size-8 place-items-center rounded-lg bg-accent/20 font-display text-[15px] italic text-accent ring-1 ring-accent/30">A</div>
               <div className="leading-none">
                 <div className="font-display text-[17px] font-medium tracking-tight">Archivist</div>
                 <div className="mt-1 font-mono text-[9.5px] uppercase tracking-[0.18em] text-ink-soft">Personal OS</div>
@@ -51,7 +51,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="px-4">
             <button
               onClick={() => setSwitcherOpen((v) => !v)}
-              className="relative w-full rounded-xl border border-line bg-panel/80 p-1.5 text-left backdrop-blur-md"
+              className="relative w-full rounded-xl border border-line/60 bg-panel/60 p-1.5 text-left transition-all hover:border-accent/50 hover:bg-panel/80 focus-visible:ring-2 focus-visible:ring-accent/70 backdrop-blur-md"
             >
               <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-soft">
                 Org
@@ -103,10 +103,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                   key={item.to}
                   to={item.to}
                   className={cn(
-                    "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors",
+                    "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all focus-visible:ring-2 focus-visible:ring-accent/70",
                     active
-                      ? "bg-accent-soft font-medium text-accent ring-1 ring-accent/10"
-                      : "text-ink-soft hover:bg-ink/5",
+                      ? "bg-accent/15 font-medium text-accent ring-1 ring-accent/30 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-r-full before:bg-accent"
+                      : "text-ink-soft hover:bg-ink/8",
                   )}
                 >
                   <span className={cn("size-1.5 rounded-full", active ? "bg-accent" : "bg-line")} />
@@ -121,10 +121,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/organisations"
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-colors",
+                "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all focus-visible:ring-2 focus-visible:ring-accent/70",
                 pathname.startsWith("/organisations")
-                  ? "bg-accent-soft font-medium text-accent ring-1 ring-accent/10"
-                  : "text-ink-soft hover:bg-ink/5",
+                  ? "bg-accent/15 font-medium text-accent ring-1 ring-accent/30 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-r-full before:bg-accent"
+                  : "text-ink-soft hover:bg-ink/8",
               )}
             >
               <span
@@ -152,7 +152,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-line/70 bg-paper/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-line/60 bg-paper/85 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.4)] backdrop-blur-xl">
       <div className="flex items-center gap-4 px-6 py-3.5 md:px-8">
         <div className="min-w-0">
           <h1 className="truncate font-display text-[22px] font-medium tracking-tight">{title}</h1>
@@ -177,7 +177,7 @@ export function PrimaryButton({
     <button
       type={type}
       onClick={onClick}
-      className="rounded-lg bg-ink px-3.5 py-2 text-[12.5px] font-medium text-paper transition-transform hover:-translate-y-px active:translate-y-0"
+      className="inline-flex h-9 items-center rounded-lg bg-ink px-4 text-[12.5px] font-medium text-paper transition-all hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70"
     >
       {children}
     </button>
@@ -197,7 +197,7 @@ export function GhostButton({
     <button
       type={type}
       onClick={onClick}
-      className="rounded-lg border border-line bg-panel/70 px-3 py-1.5 text-[12px] font-medium transition-colors hover:bg-ink/5"
+      className="inline-flex h-9 items-center rounded-lg border border-line/60 bg-panel/40 px-3.5 text-[12px] font-medium transition-all hover:border-line/80 hover:bg-panel/70 focus-visible:ring-2 focus-visible:ring-accent/70"
     >
       {children}
     </button>
