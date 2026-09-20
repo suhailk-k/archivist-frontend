@@ -30,6 +30,8 @@ function ProjectDetail() {
   const { db } = store;
   const [tab, setTab] = useState<Tab>("Overview");
   const [editOpen, setEditOpen] = useState(false);
+  const [newMemberOpen, setNewMemberOpen] = useState(false);
+  const [newMemberForm, setNewMemberForm] = useState({ name: "", role: "", email: "" });
 
   const project = db.projects.find((p) => p.id === projectId);
 
@@ -210,7 +212,23 @@ function ProjectDetail() {
             ) : null}
 
             {tab === "Team" ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="font-display text-[16px] font-medium">Team</div>
+                    <div className="font-mono text-[10px] text-ink-soft">
+                      {project.memberIds.length} assigned · {members.length} in organisation
+                    </div>
+                  </div>
+                  <PrimaryButton
+                    onClick={() => {
+                      setNewMemberForm({ name: "", role: "", email: "" });
+                      setNewMemberOpen(true);
+                    }}
+                  >
+                    + New member
+                  </PrimaryButton>
+                </div>
                 {members.map((m) => {
                   const on = project.memberIds.includes(m.id);
                   return (
@@ -224,13 +242,14 @@ function ProjectDetail() {
                       </div>
                       <div className="ml-auto">
                         <GhostButton
-                          onClick={() =>
+                          onClick={() => {
                             store.updateProject(project.id, {
                               memberIds: on
                                 ? project.memberIds.filter((x) => x !== m.id)
                                 : [...project.memberIds, m.id],
-                            })
-                          }
+                            });
+                            toast.success(on ? `${m.name} removed from project` : `${m.name} added to project`);
+                          }}
                         >
                           {on ? "Remove" : "Add to project"}
                         </GhostButton>
@@ -252,6 +271,59 @@ function ProjectDetail() {
       </div>
 
       <EditProjectModal open={editOpen} onClose={() => setEditOpen(false)} projectId={project.id} />
+      <Modal open={newMemberOpen} title="Add new project member" onClose={() => setNewMemberOpen(false)}>
+        <div className="space-y-3">
+          <Field label="Name">
+            <TextInput
+              autoFocus
+              value={newMemberForm.name}
+              onChange={(e) => setNewMemberForm({ ...newMemberForm, name: e.target.value })}
+              placeholder="Full name"
+            />
+          </Field>
+          <Field label="Role">
+            <TextInput
+              value={newMemberForm.role}
+              onChange={(e) => setNewMemberForm({ ...newMemberForm, role: e.target.value })}
+              placeholder="Design lead"
+            />
+          </Field>
+          <Field label="Email">
+            <TextInput
+              type="email"
+              value={newMemberForm.email}
+              onChange={(e) => setNewMemberForm({ ...newMemberForm, email: e.target.value })}
+              placeholder="name@example.com"
+            />
+          </Field>
+          <div className="flex justify-end gap-2 pt-1">
+            <GhostButton onClick={() => setNewMemberOpen(false)}>Cancel</GhostButton>
+            <PrimaryButton
+              onClick={() => {
+                const name = newMemberForm.name.trim();
+                if (!name) {
+                  toast.error("A name is required");
+                  return;
+                }
+                const created = store.addMember({
+                  orgId: project.orgId,
+                  name,
+                  role: newMemberForm.role.trim(),
+                  email: newMemberForm.email.trim(),
+                });
+                store.updateProject(project.id, {
+                  memberIds: [...project.memberIds, created.id],
+                });
+                toast.success(`${created.name} added to project`);
+                setNewMemberForm({ name: "", role: "", email: "" });
+                setNewMemberOpen(false);
+              }}
+            >
+              Add member
+            </PrimaryButton>
+          </div>
+        </div>
+      </Modal>
     </>
   );
 }

@@ -39,7 +39,7 @@ interface StoreValue {
   updateOrganisation: (id: ID, patch: Partial<Organisation>) => void;
   removeOrganisation: (id: ID) => void;
 
-  addMember: (input: Omit<Member, "id">) => void;
+  addMember: (input: Omit<Member, "id">) => Member;
   updateMember: (id: ID, patch: Partial<Member>) => void;
   removeMember: (id: ID) => void;
 
@@ -153,12 +153,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           activity: prev.activity.filter((a) => a.orgId !== id),
         })),
 
-      addMember: (input) =>
+      addMember: (input) => {
+        const created: Member = { ...input, id: uid() };
         mutate((prev) => ({
           ...prev,
-          members: [...prev.members, { ...input, id: uid() }],
+          members: [...prev.members, created],
           activity: log(prev, { orgId: input.orgId, projectId: null, text: `${input.name} added as ${input.role}`, tone: "verd" }),
-        })),
+        }));
+        return created;
+      },
       updateMember: (id, patch) =>
         mutate((prev) => ({
           ...prev,
