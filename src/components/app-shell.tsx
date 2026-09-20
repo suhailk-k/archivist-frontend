@@ -168,16 +168,19 @@ export function PrimaryButton({
   children,
   onClick,
   type = "button",
+  disabled = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
+  disabled?: boolean;
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70"
+      disabled={disabled}
+      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.6)] active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:shadow-none"
     >
       {children}
     </button>
@@ -188,16 +191,19 @@ export function GhostButton({
   children,
   onClick,
   type = "button",
+  disabled = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
   type?: "button" | "submit";
+  disabled?: boolean;
 }) {
   return (
     <button
       type={type}
       onClick={onClick}
-      className="inline-flex h-9 items-center rounded-lg border border-line/60 bg-panel/40 px-3.5 text-[12px] font-medium transition-all hover:border-line/80 hover:bg-panel/70 focus-visible:ring-2 focus-visible:ring-accent/70"
+      disabled={disabled}
+      className="inline-flex h-9 items-center rounded-lg border border-line/60 bg-panel/40 px-3.5 text-[12px] font-medium transition-all hover:border-line/80 hover:bg-panel/70 focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45"
     >
       {children}
     </button>

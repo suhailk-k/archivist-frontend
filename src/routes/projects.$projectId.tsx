@@ -31,7 +31,7 @@ function ProjectDetail() {
   const [tab, setTab] = useState<Tab>("Overview");
   const [editOpen, setEditOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [newMemberOpen, setNewMemberOpen] = useState(false);
   const [newMemberForm, setNewMemberForm] = useState({ name: "", role: "", email: "" });
 
@@ -223,18 +223,15 @@ function ProjectDetail() {
                       {assignedMembers.length} assigned · {members.length} in organisation
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <GhostButton onClick={() => setAddMemberOpen(true)}>
-                      + Add member
-                    </GhostButton>
-                    <PrimaryButton
+                  <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                    <GhostButton
                       onClick={() => {
-                        setNewMemberForm({ name: "", role: "", email: "" });
-                        setNewMemberOpen(true);
+                        setSelectedMemberIds([]);
+                        setAddMemberOpen(true);
                       }}
                     >
-                      + New member
-                    </PrimaryButton>
+                      + Add member
+                    </GhostButton>
                   </div>
                 </div>
                 {assignedMembers.map((m) => (
@@ -274,43 +271,72 @@ function ProjectDetail() {
       </div>
 
       <EditProjectModal open={editOpen} onClose={() => setEditOpen(false)} projectId={project.id} />
-      <Modal open={addMemberOpen} title="Add member to project" onClose={() => setAddMemberOpen(false)}>
+      <Modal
+        open={addMemberOpen}
+        title="Add members to project"
+        onClose={() => {
+          setSelectedMemberIds([]);
+          setAddMemberOpen(false);
+        }}
+      >
         <div className="space-y-3">
-          <Field label="Organisation members">
-            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+          <Field label={`Organisation members · ${selectedMemberIds.length} selected`}>
+            <div
+              className="max-h-64 space-y-2 overflow-y-auto pr-1"
+              role="listbox"
+              aria-label="Organisation members available for this project"
+              aria-multiselectable="true"
+            >
               {members
                 .filter((member) => !project.memberIds.includes(member.id))
-                .map((member) => (
-                  <button
-                    key={member.id}
-                    type="button"
-                    onClick={() => setSelectedMemberId(member.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${
-                      selectedMemberId === member.id
-                        ? "border-accent bg-accent/10 ring-1 ring-accent/50"
-                        : "border-line bg-paper/40 hover:border-accent/60 hover:bg-panel/70"
-                    }`}
-                  >
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-accent-soft font-mono text-[11px] text-accent">
-                      {member.name.slice(0, 1)}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium text-ink">{member.name}</span>
-                      <span className="block truncate font-mono text-[10px] text-ink-soft">
-                        {member.role || "No role set"}
+                .map((member) => {
+                  const isSelected = selectedMemberIds.includes(member.id);
+                  return (
+                    <button
+                      key={member.id}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() =>
+                        setSelectedMemberIds((current) =>
+                          isSelected ? current.filter((id) => id !== member.id) : [...current, member.id],
+                        )
+                      }
+                      className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-2 focus-visible:ring-accent/70 ${
+                        isSelected
+                          ? "border-accent bg-accent/10 ring-1 ring-accent/50"
+                          : "border-line bg-paper/40 hover:border-accent/60 hover:bg-panel/70"
+                      }`}
+                    >
+                      <span
+                        className={`grid size-8 shrink-0 place-items-center rounded-full font-mono text-[11px] ${
+                          isSelected ? "bg-accent text-paper" : "bg-accent-soft text-accent"
+                        }`}
+                      >
+                        {isSelected ? "✓" : member.name.slice(0, 1)}
                       </span>
-                    </span>
-                  </button>
-                ))}
+                      <span className="min-w-0">
+                        <span className="block truncate text-[13px] font-medium text-ink">{member.name}</span>
+                        <span className="block truncate font-mono text-[10px] text-ink-soft">
+                          {member.role || "No role set"}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
               {members.every((member) => project.memberIds.includes(member.id)) ? (
-                <p className="font-mono text-[10.5px] text-ink-soft">All organisation members are already on this project.</p>
+                <p role="status" className="font-mono text-[10.5px] text-ink-soft">
+                  All organisation members are already on this project.
+                </p>
               ) : null}
             </div>
           </Field>
           <button
             type="button"
-            className="font-mono text-[10.5px] text-accent hover:underline"
+            aria-label="Add a new organisation member"
+            className="font-mono text-[10.5px] text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/70"
             onClick={() => {
+              setSelectedMemberIds([]);
               setAddMemberOpen(false);
               setNewMemberForm({ name: "", role: "", email: "" });
               setNewMemberOpen(true);
@@ -318,28 +344,39 @@ function ProjectDetail() {
           >
             New person not listed? Add organisation member →
           </button>
-          <div className="flex justify-end gap-2 pt-1">
-            <GhostButton onClick={() => setAddMemberOpen(false)}>Cancel</GhostButton>
-            <PrimaryButton
+          <div className="flex flex-wrap justify-end gap-2 pt-1">
+            <GhostButton
               onClick={() => {
-                if (!selectedMemberId) {
-                  toast.error("Choose a member first");
-                  return;
-                }
-                const member = members.find((item) => item.id === selectedMemberId);
-                if (!member || project.memberIds.includes(member.id)) {
-                  toast.error("Member is already on this project");
-                  return;
-                }
-                store.updateProject(project.id, {
-                  memberIds: [...project.memberIds, member.id],
-                });
-                toast.success(`${member.name} added to project`);
-                setSelectedMemberId("");
+                setSelectedMemberIds([]);
                 setAddMemberOpen(false);
               }}
             >
-              Add to project
+              Cancel
+            </GhostButton>
+            <PrimaryButton
+              disabled={selectedMemberIds.length === 0}
+              onClick={() => {
+                const selectedIds = selectedMemberIds.filter((id) => !project.memberIds.includes(id));
+                if (selectedIds.length === 0) {
+                  toast.error("Choose at least one member");
+                  return;
+                }
+                const selectedMembers = members.filter((member) => selectedIds.includes(member.id));
+                if (selectedMembers.length === 0) {
+                  toast.error("No valid organisation members selected");
+                  return;
+                }
+                store.updateProject(project.id, {
+                  memberIds: [...project.memberIds, ...selectedMembers.map((member) => member.id)],
+                });
+                toast.success(
+                  `${selectedMembers.length} member${selectedMembers.length === 1 ? "" : "s"} added to project`,
+                );
+                setSelectedMemberIds([]);
+                setAddMemberOpen(false);
+              }}
+            >
+              {selectedMemberIds.length > 0 ? `Add ${selectedMemberIds.length} to project` : "Add to project"}
             </PrimaryButton>
           </div>
         </div>
