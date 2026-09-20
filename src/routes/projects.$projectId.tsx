@@ -52,7 +52,6 @@ function ProjectDetail() {
   const members = db.members.filter((m) => m.orgId === project.orgId);
   const tasks = db.tasks.filter((t) => t.projectId === project.id);
   const milestones = db.milestones.filter((m) => m.projectId === project.id).sort((a, b) => a.date.localeCompare(b.date));
-  const docs = db.docs.filter((d) => d.projectId === project.id);
   const meetings = db.meetings.filter((m) => m.projectId === project.id).sort((a, b) => a.date.localeCompare(b.date));
   const decisions = db.decisions.filter((d) => d.projectId === project.id);
   const history = db.activity.filter((a) => a.projectId === project.id);
