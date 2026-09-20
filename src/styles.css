@@ -69,16 +69,16 @@
 :root {
   --radius: 0.75rem;
 
-  --paper: oklch(0.973 0.006 255);
-  --panel: oklch(1 0 0);
-  --ink: oklch(0.22 0.019 258);
-  --ink-soft: oklch(0.508 0.021 258);
-  --line: oklch(0.917 0.011 256);
-  --accent: oklch(0.535 0.193 266);
-  --accent-soft: oklch(0.957 0.014 265);
-  --verd: oklch(0.608 0.113 160);
-  --amber: oklch(0.63 0.122 71);
-  --rose: oklch(0.606 0.13 17);
+  --paper: oklch(0.135 0.025 264);
+  --panel: oklch(0.185 0.028 264);
+  --ink: oklch(0.94 0.018 258);
+  --ink-soft: oklch(0.67 0.035 258);
+  --line: oklch(0.29 0.035 264);
+  --accent: oklch(0.72 0.19 278);
+  --accent-soft: oklch(0.24 0.065 278);
+  --verd: oklch(0.74 0.15 163);
+  --amber: oklch(0.79 0.15 78);
+  --rose: oklch(0.72 0.17 20);
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -86,15 +86,15 @@
   --card-foreground: var(--ink);
   --popover: var(--panel);
   --popover-foreground: var(--ink);
-  --primary: var(--ink);
-  --primary-foreground: var(--paper);
+  --primary: var(--accent);
+  --primary-foreground: oklch(0.13 0.02 264);
   --secondary: var(--accent-soft);
   --secondary-foreground: var(--accent);
-  --muted: oklch(0.96 0.008 256);
+  --muted: oklch(0.25 0.03 264);
   --muted-foreground: var(--ink-soft);
-  --accent-foreground: var(--panel);
+  --accent-foreground: var(--paper);
   --destructive: var(--rose);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive-foreground: var(--paper);
   --border: var(--line);
   --input: var(--line);
   --ring: var(--accent);
@@ -106,7 +106,7 @@
   --sidebar: var(--panel);
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-primary-foreground: var(--paper);
   --sidebar-accent: var(--accent-soft);
   --sidebar-accent-foreground: var(--accent);
   --sidebar-border: var(--line);
@@ -119,10 +119,21 @@
   }
 
   body {
+    min-width: 320px;
     background-color: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+    color: var(--color-ink);
   }
 }
 
@@ -139,6 +150,17 @@
 
 @utility rise {
   animation: rise 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @utility panel {
