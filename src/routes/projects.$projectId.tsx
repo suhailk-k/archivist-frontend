@@ -2,7 +2,7 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
-import { Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
+import { ConfirmModal, Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
 import { DateChip, Empty, Panel, Pill, Progress, Timeline, formatDate, relativeTime } from "@/components/kit";
 import { projectProgress, useStore } from "@/lib/store";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, type Priority, type ProjectStatus } from "@/lib/types";
@@ -30,6 +30,7 @@ function ProjectDetail() {
   const { db } = store;
   const [tab, setTab] = useState<Tab>("Overview");
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [newMemberOpen, setNewMemberOpen] = useState(false);
@@ -71,14 +72,7 @@ function ProjectDetail() {
         action={
           <>
             <GhostButton onClick={() => setEditOpen(true)}>Edit</GhostButton>
-            <PrimaryButton
-              onClick={() => {
-                store.removeProject(project.id);
-                toast.success("Project deleted");
-              }}
-            >
-              Delete
-            </PrimaryButton>
+            <PrimaryButton onClick={() => setDeleteOpen(true)}>Delete</PrimaryButton>
           </>
         }
       />
@@ -271,6 +265,17 @@ function ProjectDetail() {
       </div>
 
       <EditProjectModal open={editOpen} onClose={() => setEditOpen(false)} projectId={project.id} />
+      <ConfirmModal
+        open={deleteOpen}
+        title="Delete project?"
+        description={`This permanently deletes "${project.name}" and all its tasks, documents, meetings and decisions. This can't be undone.`}
+        confirmLabel="Delete project"
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          store.removeProject(project.id);
+          toast.success("Project deleted");
+        }}
+      />
       <Modal
         open={addMemberOpen}
         title="Add members to project"

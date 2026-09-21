@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { GhostButton } from "@/components/app-shell";
 import { cn } from "@/lib/utils";
 
 export function Field({ label, children }: { label: string; children: ReactNode }) {
@@ -47,6 +48,44 @@ export function Modal({
           </button>
         </div>
         {children}
+      </div>
+    </div>
+  );
+}
+
+export function ConfirmModal({
+  open,
+  title,
+  description,
+  confirmLabel = "Delete",
+  onConfirm,
+  onClose,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-ink/25 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-panel p-5 shadow-xl">
+        <h3 className="font-display text-[16px] font-medium">{title}</h3>
+        <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">{description}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <GhostButton onClick={onClose}>Cancel</GhostButton>
+          <button
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
+            className="rounded-lg bg-red-500 px-3.5 py-2 text-[12.5px] font-medium text-white transition-colors hover:bg-red-600"
+          >
+            {confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
   );
