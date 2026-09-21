@@ -2,7 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
   Link,
+  useRouterState,
   createRootRouteWithContext,
+  useNavigate,
   useRouter,
   HeadContent,
   Scripts,
@@ -12,6 +14,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { StoreProvider } from "@/lib/store";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/app-shell";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -129,13 +132,76 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <StoreProvider>
-        <AppShell>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-        </AppShell>
-      </StoreProvider>
+      <AuthProvider>
+        <AuthGate />
+      </AuthProvider>
       <Toaster position="top-right" />
     </QueryClientProvider>
+  );
+}
+
+/** Routes that render without a session, outside the workspace shell. */
+const PUBLIC_PATHS = new Set(["/login", "/setup"]);
+
+type Redirect = "/" | "/login" | "/setup" | null;
+
+function AuthGate() {
+  const { ready, user, needsSetup, backendError } = useAuth();
+  const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+
+  let redirect: Redirect = null;
+  if (ready && !backendError) {
+    if (needsSetup && pathname !== "/setup") redirect = "/setup";
+    else if (!needsSetup && !user && pathname !== "/login") redirect = "/login";
+    else if (user && PUBLIC_PATHS.has(pathname)) redirect = "/";
+  }
+
+  useEffect(() => {
+    if (redirect) void navigate({ to: redirect, replace: true });
+  }, [redirect, navigate]);
+
+  // Without a reachable backend we know nothing about accounts — showing the login form here
+  // would invite the user to sign in to something that was never asked.
+  if (ready && backendError) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-paper px-4">
+        <div className="max-w-md text-center">
+          <h1 className="text-xl font-semibold tracking-tight text-ink">Archivist backend is not running</h1>
+          <p className="mt-2 text-sm text-ink-soft">{backendError}</p>
+          <p className="mt-4 text-sm text-ink-soft">
+            Start it with <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-xs">npm run dev</code> in{" "}
+            <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-xs">archivist-src-backend</code>, then reload
+            this page.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex items-center justify-center rounded-md bg-accent px-4 py-2 text-sm font-medium text-paper transition-colors hover:bg-accent/90 focus-visible:ring-2 focus-visible:ring-accent/70"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!ready || redirect) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-paper text-sm text-ink-soft">
+        Connecting to Archivist…
+      </div>
+    );
+  }
+
+  // Login and setup render bare: the shell needs an authenticated store.
+  if (PUBLIC_PATHS.has(pathname)) return <Outlet />;
+
+  return (
+    <StoreProvider>
+      <AppShell>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+      </AppShell>
+    </StoreProvider>
   );
 }

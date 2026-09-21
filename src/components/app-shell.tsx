@@ -1,6 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth";
 import { useOrgData, useStore } from "@/lib/store";
 
 const NAV = [
@@ -16,9 +18,11 @@ const NAV = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { db, orgId, setOrgId, org } = useStore();
+  const { db, orgId, setOrgId, org, syncError, refresh } = useStore();
+  const { user, logout } = useAuth();
   const data = useOrgData();
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const counts: Record<string, string | number | undefined> = {
@@ -94,6 +98,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             ) : null}
           </div>
 
+          {syncError ? (
+            <button
+              type="button"
+              onClick={() => {
+                void refresh().catch(() => toast.error("Archivist backend is still unreachable"));
+              }}
+              className="mx-4 mt-2 flex items-center gap-2 rounded-lg border border-rose/40 bg-rose/10 px-2.5 py-2 text-left transition-colors hover:border-rose/70 focus-visible:ring-2 focus-visible:ring-rose/60"
+            >
+              <span className="size-1.5 shrink-0 rounded-full bg-rose" />
+              <span className="min-w-0">
+                <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-rose">Backend offline</span>
+                <span className="block truncate text-[11px] text-ink-soft">Tap to retry</span>
+              </span>
+            </button>
+          ) : null}
+
           <nav className="mt-5 flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
             <div className="px-2 pb-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-ink-soft">Workspace</div>
             {NAV.map((item) => {
@@ -133,7 +153,50 @@ export function AppShell({ children }: { children: ReactNode }) {
               Organisations
               <span className="ml-auto font-mono text-[10px]">{db.organisations.length}</span>
             </Link>
+            {user?.role === "superadmin" ? (
+              <Link
+                to="/admin"
+                className={cn(
+                  "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] transition-all focus-visible:ring-2 focus-visible:ring-accent/70",
+                  pathname.startsWith("/admin")
+                    ? "bg-accent/15 font-medium text-accent ring-1 ring-accent/30 before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-0.5 before:rounded-r-full before:bg-accent"
+                    : "text-ink-soft hover:bg-ink/8",
+                )}
+              >
+                <span className={cn("size-1.5 rounded-full", pathname.startsWith("/admin") ? "bg-accent" : "bg-line")} />
+                Access control
+              </Link>
+            ) : null}
           </nav>
+
+          {user ? (
+            <div className="border-t border-line/60 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <div className="grid size-7 shrink-0 place-items-center rounded-full bg-accent/15 font-mono text-[11px] text-accent ring-1 ring-accent/25">
+                  {user.displayName.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <div className="truncate text-[12px] font-medium">{user.displayName}</div>
+                  <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-soft">
+                    {user.role === "superadmin" ? "Superadmin" : "Member"}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={signingOut}
+                  onClick={() => {
+                    setSigningOut(true);
+                    void logout()
+                      .catch(() => toast.error("Could not sign out"))
+                      .finally(() => setSigningOut(false));
+                  }}
+                  className="ml-auto rounded-lg border border-line/60 px-2 py-1 font-mono text-[10px] text-ink-soft transition-colors hover:border-rose/60 hover:text-rose focus-visible:ring-2 focus-visible:ring-accent/70 disabled:opacity-50"
+                >
+                  {signingOut ? "…" : "Sign out"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </aside>
 
         <main className="min-w-0 flex-1">{children}</main>

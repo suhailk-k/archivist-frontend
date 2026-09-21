@@ -122,21 +122,12 @@ function Organisations() {
           </div>
         ) : null}
 
-        <Panel className="mt-3">
-          <PanelHead index="a" title="What is Elance?" />
-          <p className="px-4 pb-5 text-[13px] leading-relaxed text-ink-soft">
-            Elance was one of the first large freelance marketplaces, launched in 1999. Businesses posted jobs, freelancers
-            bid on them, and the platform handled contracts, milestones and payments. In 2013 it merged with oDesk and the
-            combined company was renamed Upwork in 2015, so the original Elance brand no longer operates. Here it is simply
-            used as the name of one of your organisations — rename it any time with the Edit button above.
-          </p>
-        </Panel>
       </div>
 
       <Modal open={open} title={editing ? "Edit organisation" : "New organisation"} onClose={() => setOpen(false)}>
         <div className="space-y-3">
           <Field label="Name">
-            <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Elance" />
+            <TextInput value={name} onChange={(e) => setName(e.target.value)} placeholder="Company name" />
           </Field>
           <Field label="Description">
             <TextArea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What this company does" />

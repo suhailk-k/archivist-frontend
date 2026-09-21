@@ -10,14 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as DecisionsRouteImport } from './routes/decisions'
 import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as HistoryRouteImport } from './routes/history'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as MeetingsRouteImport } from './routes/meetings'
 import { Route as MembersRouteImport } from './routes/members'
 import { Route as OrganisationsRouteImport } from './routes/organisations'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as ProjectsRouteImport } from './routes/projects'
+import { Route as SetupRouteImport } from './routes/setup'
 import { Route as TodosRouteImport } from './routes/todos'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -25,6 +28,11 @@ import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projec
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DecisionsRoute = DecisionsRouteImport.update({
@@ -40,6 +48,11 @@ const DocumentsRoute = DocumentsRouteImport.update({
 const HistoryRoute = HistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeetingsRoute = MeetingsRouteImport.update({
@@ -67,6 +80,11 @@ const ProjectsRoute = ProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
   path: '/todos',
@@ -85,27 +103,33 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/members': typeof MembersRoute
   '/organisations': typeof OrganisationsRoute
   '/planning': typeof PlanningRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/setup': typeof SetupRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/members': typeof MembersRoute
   '/organisations': typeof OrganisationsRoute
   '/planning': typeof PlanningRoute
+  '/setup': typeof SetupRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects': typeof ProjectsIndexRoute
@@ -113,14 +137,17 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
+  '/login': typeof LoginRoute
   '/meetings': typeof MeetingsRoute
   '/members': typeof MembersRoute
   '/organisations': typeof OrganisationsRoute
   '/planning': typeof PlanningRoute
   '/projects': typeof ProjectsRouteWithChildren
+  '/setup': typeof SetupRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -129,41 +156,50 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/decisions'
     | '/documents'
     | '/history'
+    | '/login'
     | '/meetings'
     | '/members'
     | '/organisations'
     | '/planning'
     | '/projects'
+    | '/setup'
     | '/todos'
     | '/projects/$projectId'
     | '/projects/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/decisions'
     | '/documents'
     | '/history'
+    | '/login'
     | '/meetings'
     | '/members'
     | '/organisations'
     | '/planning'
+    | '/setup'
     | '/todos'
     | '/projects/$projectId'
     | '/projects'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/decisions'
     | '/documents'
     | '/history'
+    | '/login'
     | '/meetings'
     | '/members'
     | '/organisations'
     | '/planning'
     | '/projects'
+    | '/setup'
     | '/todos'
     | '/projects/$projectId'
     | '/projects/'
@@ -171,14 +207,17 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   DecisionsRoute: typeof DecisionsRoute
   DocumentsRoute: typeof DocumentsRoute
   HistoryRoute: typeof HistoryRoute
+  LoginRoute: typeof LoginRoute
   MeetingsRoute: typeof MeetingsRoute
   MembersRoute: typeof MembersRoute
   OrganisationsRoute: typeof OrganisationsRoute
   PlanningRoute: typeof PlanningRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
+  SetupRoute: typeof SetupRoute
   TodosRoute: typeof TodosRoute
 }
 
@@ -189,6 +228,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decisions': {
@@ -210,6 +256,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/history'
       preLoaderRoute: typeof HistoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meetings': {
@@ -245,6 +298,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/todos': {
@@ -287,14 +347,17 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   DecisionsRoute: DecisionsRoute,
   DocumentsRoute: DocumentsRoute,
   HistoryRoute: HistoryRoute,
+  LoginRoute: LoginRoute,
   MeetingsRoute: MeetingsRoute,
   MembersRoute: MembersRoute,
   OrganisationsRoute: OrganisationsRoute,
   PlanningRoute: PlanningRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
+  SetupRoute: SetupRoute,
   TodosRoute: TodosRoute,
 }
 export const routeTree = rootRouteImport
