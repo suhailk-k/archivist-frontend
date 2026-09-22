@@ -1,4 +1,20 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import {
+  Bell,
+  CalendarDays,
+  CheckSquare,
+  ChevronDown,
+  FileText,
+  FolderKanban,
+  History,
+  LayoutDashboard,
+  Menu,
+  Search,
+  Settings2,
+  ShieldCheck,
+  Users,
+  Video,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,6 +47,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     "/members": data.members.length,
     "/decisions": data.decisions.filter((d) => d.status === "open").length || undefined,
   };
+
+  if (/^\/projects\/[^/]+$/.test(pathname)) {
+    return <ProjectWorkspaceShell>{children}</ProjectWorkspaceShell>;
+  }
 
   return (
     <div className="min-h-screen bg-paper text-ink antialiased selection:bg-accent/30">
@@ -200,6 +220,169 @@ export function AppShell({ children }: { children: ReactNode }) {
         </aside>
 
         <main className="min-w-0 flex-1">{children}</main>
+      </div>
+    </div>
+  );
+}
+
+const NAV_ICONS = {
+  "/": LayoutDashboard,
+  "/projects": FolderKanban,
+  "/planning": CalendarDays,
+  "/todos": CheckSquare,
+  "/documents": FileText,
+  "/meetings": Video,
+  "/decisions": ShieldCheck,
+  "/members": Users,
+  "/history": History,
+} as const;
+
+function ProjectWorkspaceShell({ children }: { children: ReactNode }) {
+  const { db, orgId, setOrgId, org, syncError, refresh } = useStore();
+  const { user, logout } = useAuth();
+  const data = useOrgData();
+  const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  const counts: Record<string, string | number | undefined> = {
+    "/projects": data.projects.length,
+    "/todos": data.tasks.filter((task) => !task.done).length,
+    "/members": data.members.length,
+    "/decisions": data.decisions.filter((decision) => decision.status === "open").length || undefined,
+  };
+
+  const renderNav = (items: readonly typeof NAV[number][]) =>
+    items.map((item) => {
+      const Icon = NAV_ICONS[item.to];
+      const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+      return (
+        <Link
+          key={item.to}
+          to={item.to}
+          className={cn(
+            "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
+            active ? "bg-[#5146e5] text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+          )}
+        >
+          <Icon size={17} strokeWidth={1.8} />
+          <span>{item.label}</span>
+          {counts[item.to] !== undefined ? (
+            <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px]", active ? "bg-white/15" : "bg-white/10 text-slate-300")}>
+              {counts[item.to]}
+            </span>
+          ) : null}
+        </Link>
+      );
+    });
+
+  return (
+    <div className="project-workspace min-h-screen bg-paper text-ink antialiased">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-[252px] shrink-0 flex-col bg-[#111827] text-white md:flex">
+          <div className="border-b border-white/10 px-5 py-5">
+            <Link to="/" className="flex items-center gap-3">
+              <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold shadow-lg shadow-indigo-900/30">E</div>
+              <div>
+                <div className="text-[16px] font-semibold tracking-tight">Elance Connect</div>
+                <div className="mt-1 text-[9px] uppercase tracking-[0.2em] text-slate-400">Elance Learning</div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="px-4 pt-5">
+            <button
+              type="button"
+              onClick={() => setSwitcherOpen((open) => !open)}
+              className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-left text-[12px] hover:bg-white/10"
+            >
+              <span className="grid size-6 place-items-center rounded-md bg-emerald-400/20 text-[10px] font-semibold text-emerald-300">E&L</span>
+              <span className="truncate font-medium">{org?.name ?? "Elance Learning"}</span>
+              <ChevronDown className="ml-auto text-slate-400" size={15} />
+            </button>
+            {switcherOpen ? (
+              <div className="mt-2 space-y-1 rounded-xl bg-white/[0.06] p-2">
+                {db.organisations.filter((organisation) => organisation.id !== orgId).map((organisation) => (
+                  <button
+                    key={organisation.id}
+                    type="button"
+                    onClick={() => {
+                      setOrgId(organisation.id);
+                      setSwitcherOpen(false);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+                  >
+                    <span className="size-1.5 rounded-full bg-slate-500" />
+                    {organisation.name}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+
+          <nav className="flex-1 overflow-y-auto px-4 py-6">
+            <div className="px-2 pb-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</div>
+            <div className="space-y-1">{renderNav(NAV.slice(0, 9))}</div>
+            <div className="px-2 pb-2 pt-7 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Account</div>
+            <div className="space-y-1">
+              <Link to="/organisations" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] text-slate-300 hover:bg-white/10 hover:text-white">
+                <Users size={17} strokeWidth={1.8} />
+                Organisations
+                <span className="ml-auto rounded-full bg-white/10 px-2 py-0.5 text-[10px]">{db.organisations.length}</span>
+              </Link>
+              {user?.role === "superadmin" ? (
+                <Link to="/admin" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] text-slate-300 hover:bg-white/10 hover:text-white">
+                  <Settings2 size={17} strokeWidth={1.8} />
+                  Access control
+                </Link>
+              ) : null}
+            </div>
+          </nav>
+
+          {syncError ? (
+            <button type="button" onClick={() => void refresh().catch(() => toast.error("Archivist backend is still unreachable"))} className="mx-4 mb-3 rounded-xl border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-left text-xs text-rose-200">
+              Backend offline · retry
+            </button>
+          ) : null}
+          {user ? (
+            <div className="border-t border-white/10 px-4 py-4">
+              <div className="flex items-center gap-3">
+                <div className="grid size-9 place-items-center rounded-full bg-indigo-500 font-semibold">{user.displayName.slice(0, 1).toUpperCase()}</div>
+                <div className="min-w-0">
+                  <div className="truncate text-[12px] font-medium">{user.displayName}</div>
+                  <div className="text-[10px] text-slate-400">{user.role === "superadmin" ? "Super Admin" : "Member"}</div>
+                </div>
+                <button
+                  type="button"
+                  disabled={signingOut}
+                  onClick={() => {
+                    setSigningOut(true);
+                    void logout().catch(() => toast.error("Could not sign out")).finally(() => setSigningOut(false));
+                  }}
+                  className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                  aria-label="Sign out"
+                >
+                  <Menu size={16} />
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </aside>
+
+        <div className="min-w-0 flex-1">
+          <header className="flex h-[68px] items-center gap-4 border-b border-slate-200 bg-white px-5 md:px-8">
+            <button type="button" className="rounded-lg p-2 text-slate-500 md:hidden" aria-label="Open navigation"><Menu size={19} /></button>
+            <div className="min-w-0">
+              <div className="truncate text-[21px] font-bold tracking-tight text-slate-900">Elance Connect</div>
+              <div className="text-[10px] tracking-[0.16em] text-slate-400">{org?.name ?? "Elance Learning"} <span className="px-1">•</span> Project</div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="hidden h-10 w-[260px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-400 lg:flex"><Search size={16} /><span>Search projects, tasks, docs...</span><kbd className="ml-auto rounded-md bg-white px-1.5 py-1 text-[10px] text-slate-500">⌘K</kbd></div>
+              <button type="button" className="relative grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50" aria-label="Notifications"><Bell size={17} /><span className="absolute right-2 top-2 size-1.5 rounded-full bg-rose-500" /></button>
+            </div>
+          </header>
+          <main className="min-w-0">{children}</main>
+        </div>
       </div>
     </div>
   );
