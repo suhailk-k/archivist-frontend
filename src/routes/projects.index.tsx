@@ -3,7 +3,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
 import { Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
+import { ProjectLinksEditor } from "@/components/project-links-editor";
 import { Empty, Panel, Pill, Progress, formatDate } from "@/components/kit";
+import { EMPTY_PROJECT_LINK, validateProjectLinks, type ProjectLinkDraft } from "@/lib/project-links";
 import { projectProgress, useOrgData, useStore } from "@/lib/store";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, type ProjectStatus } from "@/lib/types";
 
@@ -33,6 +35,7 @@ function ProjectsIndex() {
     ownerId: "",
     startDate: new Date().toISOString().slice(0, 10),
     dueDate: "",
+    links: [{ ...EMPTY_PROJECT_LINK }] as ProjectLinkDraft[],
   });
 
   const visible = projects.filter((p) => filter === "all" || p.status === filter);
@@ -40,6 +43,11 @@ function ProjectsIndex() {
   const create = () => {
     if (!form.name.trim()) {
       toast.error("Give the project a name");
+      return;
+    }
+    const linkResult = validateProjectLinks(form.links);
+    if (linkResult.error) {
+      toast.error(linkResult.error);
       return;
     }
     addProject({
@@ -51,10 +59,11 @@ function ProjectsIndex() {
       memberIds: form.ownerId ? [form.ownerId] : [],
       startDate: form.startDate,
       dueDate: form.dueDate,
+      links: linkResult.links,
     });
     toast.success("Project created");
     setOpen(false);
-    setForm({ name: "", description: "", status: "planning", ownerId: "", startDate: new Date().toISOString().slice(0, 10), dueDate: "" });
+    setForm({ name: "", description: "", status: "planning", ownerId: "", startDate: new Date().toISOString().slice(0, 10), dueDate: "", links: [{ ...EMPTY_PROJECT_LINK }] });
   };
 
   return (
@@ -102,6 +111,7 @@ function ProjectsIndex() {
                     <span>{owner?.name ?? "Unassigned"}</span>
                     <span>{p.dueDate ? `due ${formatDate(p.dueDate)}` : "no due date"}</span>
                   </div>
+                  {p.links.length > 0 ? <div className="mt-2 font-mono text-[10px] text-accent">↗ {p.links.length} link{p.links.length === 1 ? "" : "s"}</div> : null}
                 </Panel>
               </Link>
             );
@@ -144,6 +154,7 @@ function ProjectsIndex() {
               <TextInput type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
             </Field>
           </div>
+          <ProjectLinksEditor links={form.links} onChange={(links) => setForm({ ...form, links })} />
           <div className="flex justify-end gap-2 pt-1">
             <GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton>
             <PrimaryButton onClick={create}>Create project</PrimaryButton>

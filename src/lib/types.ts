@@ -19,6 +19,12 @@ export interface Member {
   email: string;
 }
 
+export interface ProjectLink {
+  id: ID;
+  label: string;
+  url: string;
+}
+
 export interface Project {
   id: ID;
   orgId: ID;
@@ -29,6 +35,7 @@ export interface Project {
   memberIds: ID[];
   startDate: string;
   dueDate: string;
+  links: ProjectLink[];
   createdAt: string;
 }
 

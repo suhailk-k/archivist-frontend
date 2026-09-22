@@ -3,7 +3,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
 import { ConfirmModal, Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
+import { ProjectLinksEditor } from "@/components/project-links-editor";
 import { DateChip, Empty, Panel, Pill, Progress, Timeline, formatDate, relativeTime } from "@/components/kit";
+import { validateProjectLinks, type ProjectLinkDraft } from "@/lib/project-links";
 import { projectProgress, useStore } from "@/lib/store";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, type Priority, type ProjectStatus } from "@/lib/types";
 
@@ -138,6 +140,18 @@ function ProjectDetail() {
                           <span className="ml-auto font-mono text-[10px] text-ink-soft">{t.dueDate}</span>
                         </div>
                       ))}
+                  </div>
+                </div>
+                <div className="rounded-xl border border-line bg-paper/40 p-4">
+                  <div className="label-mono mb-3">Links</div>
+                  {project.links.length === 0 ? <Empty text="No links added" /> : null}
+                  <div className="space-y-2">
+                    {project.links.map((link) => (
+                      <a key={link.id} href={link.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[13px] text-accent hover:underline">
+                        <span className="truncate">{link.label}</span>
+                        <span className="ml-auto shrink-0 font-mono text-[10px] text-ink-soft">↗</span>
+                      </a>
+                    ))}
                   </div>
                 </div>
                 <div className="rounded-xl border border-line bg-paper/40 p-4">
@@ -447,13 +461,22 @@ function EditProjectModal({ open, onClose, projectId }: { open: boolean; onClose
   const { db, updateProject } = useStore();
   const project = db.projects.find((p) => p.id === projectId)!;
   const members = db.members.filter((m) => m.orgId === project.orgId);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    name: string;
+    description: string;
+    status: ProjectStatus;
+    ownerId: string;
+    startDate: string;
+    dueDate: string;
+    links: ProjectLinkDraft[];
+  }>({
     name: project.name,
     description: project.description,
     status: project.status,
     ownerId: project.ownerId ?? "",
     startDate: project.startDate,
     dueDate: project.dueDate,
+    links: project.links.map((link) => ({ ...link })),
   });
 
   if (!open) return null;
@@ -494,11 +517,17 @@ function EditProjectModal({ open, onClose, projectId }: { open: boolean; onClose
             <TextInput type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} />
           </Field>
         </div>
+        <ProjectLinksEditor links={form.links} onChange={(links) => setForm({ ...form, links })} />
         <div className="flex justify-end gap-2 pt-1">
           <GhostButton onClick={onClose}>Cancel</GhostButton>
           <PrimaryButton
             onClick={() => {
-              updateProject(projectId, { ...form, ownerId: form.ownerId || null });
+              const linkResult = validateProjectLinks(form.links);
+              if (linkResult.error) {
+                toast.error(linkResult.error);
+                return;
+              }
+              updateProject(projectId, { ...form, ownerId: form.ownerId || null, links: linkResult.links });
               toast.success("Project updated");
               onClose();
             }}

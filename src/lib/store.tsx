@@ -10,6 +10,7 @@ import {
 } from "react";
 import { apiGet, apiPost } from "./api-client";
 import { useAuth } from "./auth";
+import { normalizeProjectLinks } from "./project-links";
 import type {
   Activity,
   Database,
@@ -114,8 +115,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     const remote = await apiGet<Database>("/api/data");
-    current.current = remote;
-    setDb(remote);
+    const normalized: Database = {
+      ...remote,
+      projects: remote.projects.map((project) => ({ ...project, links: normalizeProjectLinks(project.links) })),
+    };
+    current.current = normalized;
+    setDb(normalized);
     setOrgIdState((previous) =>
       remote.organisations.some((o) => o.id === previous) ? previous : remote.organisations[0]?.id ?? "",
     );
