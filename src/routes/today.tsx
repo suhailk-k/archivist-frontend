@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, FileText } from "lucide-react";
 import { useState } from "react";
 import { GhostButton, PageHeader } from "@/components/app-shell";
-import { Empty } from "@/components/kit";
+import { Empty, ListSkeleton } from "@/components/kit";
 import { DayView } from "@/components/planner/day-view";
 import { MonthView } from "@/components/planner/month-view";
 import { ReportDialog } from "@/components/planner/report-dialog";
@@ -54,7 +54,7 @@ function periodTitle(view: PlannerView, anchor: DateKey, today: DateKey) {
 }
 
 function Planner() {
-  const { org, orgId, addTask, updateTask } = useStore();
+  const { org, orgId, addTask, updateTask, hydrated } = useStore();
   const { user } = useAuth();
   const { tasks, projects, members } = useOrgData();
   const search = Route.useSearch();
@@ -97,7 +97,7 @@ function Planner() {
       <>
         {header}
         <div className="px-6 py-7 md:px-8">
-          <Empty text="Add members to this organisation to plan their work" />
+          {!hydrated ? <ListSkeleton /> : <Empty text="Add members to this organisation to plan their work" />}
         </div>
       </>
     );

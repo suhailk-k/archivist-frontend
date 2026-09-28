@@ -113,7 +113,10 @@ export interface Credential {
   name: string;
   category: string;
   username: string;
+  /** Always "" once loaded — secrets are fetched one at a time via revealCredentialSecret. */
   secret: string;
+  /** Server-derived: whether a secret is stored for this credential. */
+  hasSecret?: boolean;
   url: string;
   usedFor: string;
   notes: string;

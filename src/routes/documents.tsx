@@ -5,10 +5,11 @@ import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { DocUploadField, type UploadedFileInfo } from "@/components/doc-upload-field";
 import { SelectInput, TextArea, TextInput } from "@/components/forms";
-import { Empty, Panel, PanelHead, relativeTime } from "@/components/kit";
+import { Empty, ListSkeleton, Panel, PanelHead, relativeTime } from "@/components/kit";
 import { fileUrl } from "@/lib/api-client";
 import { DocDownloadButton } from "@/components/doc-download-button";
 import { EditDocModal } from "@/components/edit-doc-modal";
+import { isHttpUrl } from "@/lib/project-links";
 import { useOrgData, useStore } from "@/lib/store";
 import type { Doc } from "@/lib/types";
 
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/documents")({
 });
 
 function Documents() {
-  const { org, orgId, addDoc, updateDoc, removeDoc } = useStore();
+  const { org, orgId, addDoc, updateDoc, removeDoc, hydrated } = useStore();
   const { docs, projects, members } = useOrgData();
   const [query, setQuery] = useState("");
   const [form, setForm] = useState({ title: "", kind: "Spec", link: "", projectId: "", ownerId: "", notes: "" });
@@ -107,18 +108,23 @@ function Documents() {
         </div>
 
         <Panel className="mt-3 overflow-hidden">
-          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 border-b border-line px-4 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-ink-soft/70">
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 border-b border-line px-4 py-2 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
             <span>Document</span>
             <span className="w-32">Project</span>
             <span className="w-24">Owner</span>
             <span className="w-24 text-right">Updated</span>
           </div>
-          {visible.length === 0 ? (
+          {!hydrated ? (
+            <div className="p-4">
+              <ListSkeleton />
+            </div>
+          ) : null}
+          {hydrated && visible.length === 0 ? (
             <div className="p-4">
               <Empty text="No documents found" />
             </div>
           ) : null}
-          {visible.map((d) => (
+          {hydrated && visible.map((d) => (
             <div
               key={d.id}
               className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-line/50 px-4 py-2.5 last:border-b-0 hover:bg-ink/[0.03]"
@@ -131,28 +137,28 @@ function Documents() {
                     onChange={(e) => updateDoc(d.id, { title: e.target.value })}
                     className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-medium outline-none focus:text-accent"
                   />
-                  <span className="font-mono text-[9.5px] text-ink-soft">{d.kind}</span>
+                  <span className="font-mono text-[11px] text-ink-soft">{d.kind}</span>
                   {d.fileId ? (
-                    <a href={fileUrl(d.fileId)} target="_blank" rel="noreferrer" className="font-mono text-[9.5px] text-accent hover:underline">
+                    <a href={fileUrl(d.fileId)} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-accent hover:underline">
                       {d.fileName || "file"}
                     </a>
                   ) : null}
                   <DocDownloadButton doc={d} />
-                  {d.link ? (
-                    <a href={d.link} target="_blank" rel="noreferrer" className="font-mono text-[9.5px] text-accent hover:underline">
+                  {d.link && isHttpUrl(d.link) ? (
+                    <a href={d.link} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-accent hover:underline">
                       open
                     </a>
                   ) : null}
                 </div>
                 {d.notes ? <p className="mt-0.5 truncate text-[12px] text-ink-soft">{d.notes}</p> : null}
               </div>
-              <div className="w-32 truncate font-mono text-[10.5px] text-ink-soft">
+              <div className="w-32 truncate font-mono text-[11px] text-ink-soft">
                 {projects.find((p) => p.id === d.projectId)?.name ?? "—"}
               </div>
-              <div className="w-24 truncate font-mono text-[10.5px] text-ink-soft">
+              <div className="w-24 truncate font-mono text-[11px] text-ink-soft">
                 {members.find((m) => m.id === d.ownerId)?.name ?? "—"}
               </div>
-              <div className="flex w-24 items-center justify-end gap-2 font-mono text-[10.5px] text-ink-soft">
+              <div className="flex w-24 items-center justify-end gap-2 font-mono text-[11px] text-ink-soft">
                 {relativeTime(d.updatedAt)}
                 <button onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`} className="hover:text-accent">
                   <Pencil size={12} />

@@ -15,7 +15,7 @@ export interface ProjectLinksValidation {
 
 const createLinkId = (): ID => `link-${Math.random().toString(36).slice(2, 10)}`;
 
-function isHttpUrl(value: string): boolean {
+export function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return url.protocol === "http:" || url.protocol === "https:";

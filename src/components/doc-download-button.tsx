@@ -30,7 +30,7 @@ export function DocDownloadButton({ doc, className }: { doc: Pick<Doc, "fileId" 
       aria-label={`Download ${doc.fileName || doc.title}`}
       title="Download"
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[9.5px] text-accent hover:bg-accent/10 disabled:opacity-50",
+        "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] text-accent hover:bg-accent/10 disabled:opacity-50",
         className,
       )}
     >

@@ -69,11 +69,11 @@ function Members() {
               <Panel key={m.id}>
                 <PanelHead title={m.name} meta={m.role} />
                 <div className="px-4 pb-4">
-                  <div className="font-mono text-[10.5px] text-ink-soft">{m.email || "no email"}</div>
+                  <div className="font-mono text-[11px] text-ink-soft">{m.email || "no email"}</div>
                   <div className="label-mono mt-3">Involved in</div>
                   <div className="mt-1.5 space-y-1">
                     {involved.length === 0 ? (
-                      <div className="font-mono text-[10.5px] text-ink-soft">No projects yet</div>
+                      <div className="font-mono text-[11px] text-ink-soft">No projects yet</div>
                     ) : null}
                     {involved.map((p) => (
                       <Link
@@ -84,7 +84,7 @@ function Members() {
                       >
                         <span className="size-1.5 rounded-full bg-accent" />
                         <span className="truncate">{p.name}</span>
-                        {p.ownerId === m.id ? <span className="font-mono text-[9.5px] text-ink-soft">owner</span> : null}
+                        {p.ownerId === m.id ? <span className="font-mono text-[11px] text-ink-soft">owner</span> : null}
                       </Link>
                     ))}
                   </div>

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
-import { Field, TextInput } from "@/components/forms";
+import { Field, SelectInput, TextInput } from "@/components/forms";
 import { ApiRequestError } from "@/lib/api-client";
 import {
   changeUserPassword,
@@ -11,6 +11,7 @@ import {
   readUserAccess,
   replaceUserAccess,
   setUserDisabled,
+  setUserMemberLink,
   type UserAccess,
 } from "@/lib/admin-api";
 import { useAuth, type SessionUser } from "@/lib/auth";
@@ -85,6 +86,7 @@ function AdminPage() {
         <section className="space-y-4">
           {selected ? (
             <>
+              <MemberLinkPanel key={`member-${selected.id}`} target={selected} members={db.members} onSaved={reload} />
               <PasswordPanel key={`password-${selected.id}`} target={selected} />
               <AccessPanel
                 key={`access-${selected.id}`}
@@ -118,7 +120,7 @@ function UserList({ users, loading, selectedId, currentUserId, onSelect, onToggl
 
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-panel/50">
-      <div className="border-b border-line/60 px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+      <div className="border-b border-line/60 px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">
         Accounts · {users.length}
       </div>
       <ul>
@@ -132,13 +134,13 @@ function UserList({ users, loading, selectedId, currentUserId, onSelect, onToggl
               }`}
             >
               <span className="block truncate text-[13px] font-medium">{entry.displayName}</span>
-              <span className="block font-mono text-[10px] text-ink-soft">
+              <span className="block font-mono text-[11px] text-ink-soft">
                 {entry.username} · {entry.role}
                 {entry.disabled ? " · disabled" : ""}
               </span>
             </button>
             {entry.id === currentUserId ? (
-              <span className="font-mono text-[10px] text-ink-soft">you</span>
+              <span className="font-mono text-[11px] text-ink-soft">you</span>
             ) : (
               <GhostButton onClick={() => void onToggleDisabled(entry)}>
                 {entry.disabled ? "Enable" : "Disable"}
@@ -176,7 +178,7 @@ function CreateUserPanel({ onCreated }: { onCreated: () => Promise<void> }) {
 
   return (
     <form onSubmit={submit} className="space-y-3 rounded-xl border border-line bg-panel/50 p-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">New account</div>
+      <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">New account</div>
       <Field label="User ID">
         <TextInput value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="off" required />
       </Field>
@@ -196,6 +198,51 @@ function CreateUserPanel({ onCreated }: { onCreated: () => Promise<void> }) {
         {busy ? "Creating…" : "Create account"}
       </PrimaryButton>
     </form>
+  );
+}
+
+interface MemberLinkPanelProps {
+  target: SessionUser;
+  members: Array<{ id: string; name: string; orgId: string }>;
+  onSaved: () => Promise<void>;
+}
+
+/** Which member profile this login is — drives "My Work" and assignee matching. */
+function MemberLinkPanel({ target, members, onSaved }: MemberLinkPanelProps) {
+  const [memberId, setMemberId] = useState(target.memberId ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      await setUserMemberLink(target.id, memberId || null);
+      toast.success(memberId ? "Member profile linked" : "Member profile unlinked");
+      await onSaved();
+    } catch (reason: unknown) {
+      toast.error(describe(reason));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="space-y-3 rounded-xl border border-line bg-panel/50 p-4">
+      <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">Member profile · {target.username}</div>
+      <Field label="This account is">
+        <SelectInput value={memberId} onChange={(event) => setMemberId(event.target.value)}>
+          <option value="">Not linked</option>
+          {members.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name}
+            </option>
+          ))}
+        </SelectInput>
+      </Field>
+      <p className="text-[11px] text-ink-soft">Linking decides whose tasks show under "My Work" for this login.</p>
+      <PrimaryButton type="button" onClick={() => void save()} disabled={busy || memberId === (target.memberId ?? "")}>
+        {busy ? "Saving…" : "Save link"}
+      </PrimaryButton>
+    </div>
   );
 }
 
@@ -219,7 +266,7 @@ function PasswordPanel({ target }: { target: SessionUser }) {
 
   return (
     <form onSubmit={submit} className="space-y-3 rounded-xl border border-line bg-panel/50 p-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">
+      <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">
         Password · {target.username}
       </div>
       <Field label="New password">
@@ -297,7 +344,7 @@ function AccessPanel({ target, organisations, projects }: AccessPanelProps) {
 
   return (
     <div className="space-y-3 rounded-xl border border-line bg-panel/50 p-4">
-      <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">Access · {target.username}</div>
+      <div className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">Access · {target.username}</div>
       {organisations.length === 0 ? <p className="text-[13px] text-ink-soft">No organisations exist yet.</p> : null}
       {organisations.map((organisation) => {
         const granted = access.organisationIds.includes(organisation.id);

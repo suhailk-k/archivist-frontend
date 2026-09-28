@@ -9,10 +9,11 @@ export const Route = createFileRoute("/setup")({ component: SetupPage });
 
 function SetupPage() {
   const navigate = useNavigate();
-  const { setup } = useAuth();
+  const { setup, setupTokenRequired } = useAuth();
   const [username, setUsername] = useState("admin");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [setupToken, setSetupToken] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -21,7 +22,7 @@ function SetupPage() {
     setBusy(true);
     setError(null);
     try {
-      await setup(username, displayName, password);
+      await setup(username, displayName, password, setupToken.trim());
       await navigate({ to: "/" });
     } catch (reason) {
       setError(reason instanceof ApiRequestError ? reason.message : "Could not connect to Archivist backend.");
@@ -38,6 +39,17 @@ function SetupPage() {
           <p className="mt-1 text-sm text-ink-soft">Create your superadmin account.</p>
         </div>
         <div className="space-y-4">
+          {setupTokenRequired ? (
+            <Field label="Setup token">
+              <TextInput
+                value={setupToken}
+                onChange={(event) => setSetupToken(event.target.value)}
+                autoComplete="off"
+                placeholder="Printed in the backend console on start"
+                required
+              />
+            </Field>
+          ) : null}
           <Field label="User ID">
             <TextInput value={username} onChange={(event) => setUsername(event.target.value)} autoComplete="username" required />
           </Field>

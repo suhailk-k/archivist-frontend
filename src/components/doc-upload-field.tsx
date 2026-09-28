@@ -61,7 +61,7 @@ export function DocUploadField({
       <div className="flex items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-[13px]">
         <FileUp size={14} className="shrink-0 text-ink-soft" />
         <span className="min-w-0 flex-1 truncate">{value.fileName}</span>
-        <span className="shrink-0 text-[10px] text-ink-soft">{formatBytes(value.fileSize)}</span>
+        <span className="shrink-0 text-[11px] text-ink-soft">{formatBytes(value.fileSize)}</span>
         <button type="button" onClick={() => onChange(null)} aria-label="Remove uploaded file" className="shrink-0 text-ink-soft hover:text-rose">
           <X size={14} />
         </button>

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { SelectInput, TextArea, TextInput } from "@/components/forms";
-import { Empty, Panel, PanelHead, Pill, formatDate } from "@/components/kit";
+import { Empty, ListSkeleton, Panel, PanelHead, Pill, formatDate } from "@/components/kit";
 import type { DecisionStatus } from "@/lib/types";
 import { useOrgData, useStore } from "@/lib/store";
 
@@ -28,7 +28,7 @@ const STATUS: { value: DecisionStatus; label: string; tone: "amber" | "verd" | "
 const today = () => new Date().toISOString().slice(0, 10);
 
 function Decisions() {
-  const { org, orgId, addDecision, updateDecision, removeDecision } = useStore();
+  const { org, orgId, addDecision, updateDecision, removeDecision, hydrated } = useStore();
   const { decisions, projects, members } = useOrgData();
   const [filter, setFilter] = useState<DecisionStatus | "all">("all");
   const [form, setForm] = useState({ title: "", rationale: "", projectId: "", decidedById: "" });
@@ -100,7 +100,7 @@ function Decisions() {
             <button
               key={v}
               onClick={() => setFilter(v as DecisionStatus | "all")}
-              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
                 filter === v ? "border-ink bg-ink text-paper" : "border-line text-ink-soft hover:border-ink/30"
               }`}
             >
@@ -110,12 +110,17 @@ function Decisions() {
         </div>
 
         <Panel className="mt-3">
-          {visible.length === 0 ? (
+          {!hydrated ? (
+            <div className="p-4">
+              <ListSkeleton />
+            </div>
+          ) : null}
+          {hydrated && visible.length === 0 ? (
             <div className="p-4">
               <Empty text="No decisions recorded" />
             </div>
           ) : null}
-          {visible.map((d) => (
+          {hydrated && visible.map((d) => (
             <div key={d.id} className="border-b border-line/50 px-4 py-3 last:border-b-0">
               <div className="flex items-center gap-2">
                 <input
@@ -126,11 +131,11 @@ function Decisions() {
                 <Pill tone={STATUS.find((s) => s.value === d.status)?.tone ?? "amber"}>
                   {STATUS.find((s) => s.value === d.status)?.label ?? d.status}
                 </Pill>
-                <button onClick={() => removeDecision(d.id)} className="font-mono text-[10.5px] text-ink-soft hover:text-rose">
+                <button onClick={() => removeDecision(d.id)} className="font-mono text-[11px] text-ink-soft hover:text-rose">
                   ✕
                 </button>
               </div>
-              <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+              <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
                 {formatDate(d.date)} · {projects.find((p) => p.id === d.projectId)?.name ?? "No project"} ·{" "}
                 {members.find((m) => m.id === d.decidedById)?.name ?? "Unassigned"}
               </div>
@@ -144,7 +149,7 @@ function Decisions() {
                   <button
                     key={s.value}
                     onClick={() => updateDecision(d.id, { status: s.value })}
-                    className={`rounded-full border px-2.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] transition-colors ${
+                    className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
                       d.status === s.value ? "border-ink bg-ink text-paper" : "border-line text-ink-soft hover:border-ink/30"
                     }`}
                   >

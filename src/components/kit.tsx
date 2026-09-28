@@ -1,5 +1,7 @@
 import { Check, Copy, Eye, EyeOff } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { toast } from "sonner";
+import { revealCredentialSecret } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
 type Tone = "accent" | "verd" | "amber" | "rose" | "line";
@@ -48,7 +50,7 @@ export function PanelHead({
     <div className="flex items-center gap-2.5 border-b border-line/40 px-4 py-3">
       {index ? <div className="label-mono text-ink-soft/70 tracking-[0.18em]">({index})</div> : null}
       <h2 className="font-display text-[16px] font-medium text-ink">{title}</h2>
-      {meta ? <span className="font-mono text-[10.5px] text-ink-soft/60">{meta}</span> : null}
+      {meta ? <span className="font-mono text-[11px] text-ink-soft/60">{meta}</span> : null}
       {action ? <div className="ml-auto">{action}</div> : null}
     </div>
   );
@@ -58,7 +60,7 @@ export function Pill({ tone = "line", children }: { tone?: Tone; children: React
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[10px] ring-1",
+        "inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 font-mono text-[11px] ring-1",
         tonePill[tone],
       )}
     >
@@ -88,7 +90,7 @@ export function Progress({ value, tone = "accent" }: { value: number; tone?: Ton
       <div className="h-1 w-24 overflow-hidden rounded-full bg-line/50">
         <div className={cn("h-full rounded-full transition-all duration-300", toneDot[tone])} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
       </div>
-      <span className="font-mono text-[10px] text-ink-soft/80">{value}%</span>
+      <span className="font-mono text-[11px] text-ink-soft/80">{value}%</span>
     </div>
   );
 }
@@ -107,7 +109,7 @@ export function Timeline({
           <div key={i.id} className="relative">
             <span className={cn("absolute -left-[13px] top-1 size-2.5 rounded-full ring-4 ring-panel", toneDot[i.tone])} />
             <div className="text-[12.5px] leading-snug text-ink">{i.text}</div>
-            <div className="mt-0.5 font-mono text-[9.5px] text-ink-soft/70">{i.meta}</div>
+            <div className="mt-0.5 font-mono text-[11px] text-ink-soft/70">{i.meta}</div>
           </div>
         ))}
       </div>
@@ -156,36 +158,86 @@ export function formatDate(date: string) {
 }
 
 /** A password/secret shown masked by default, with reveal and copy-to-clipboard controls. */
-export function SecretValue({ value }: { value: string }) {
-  const [revealed, setRevealed] = useState(false);
+/** How long a revealed secret stays on screen before it's dropped from memory again. */
+const SECRET_VISIBLE_MS = 30_000;
+
+/**
+ * Secrets never arrive with the page data. Reveal/copy fetch this one from the server (which
+ * audit-logs it), and the plaintext is forgotten again after SECRET_VISIBLE_MS.
+ */
+export function SecretValue({ credentialId, hasSecret }: { credentialId: string; hasSecret: boolean }) {
+  const [secret, setSecret] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  if (!value) return <span className="text-ink-soft/60">—</span>;
+  useEffect(() => {
+    if (secret === null) return;
+    const timer = window.setTimeout(() => setSecret(null), SECRET_VISIBLE_MS);
+    return () => window.clearTimeout(timer);
+  }, [secret]);
+
+  if (!hasSecret) return <span className="text-ink-soft/60">—</span>;
+
+  const fetchSecret = async (): Promise<string | null> => {
+    setLoading(true);
+    try {
+      return await revealCredentialSecret(credentialId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load the secret");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggle = async () => {
+    if (secret !== null) {
+      setSecret(null);
+      return;
+    }
+    setSecret(await fetchSecret());
+  };
+
+  const copy = async () => {
+    const value = secret ?? (await fetchSecret());
+    if (value === null) return;
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
 
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="font-mono text-[12px] tracking-wide">{revealed ? value : "•".repeat(Math.min(value.length, 14))}</span>
+      <span className="font-mono text-[12px] tracking-wide">{secret ?? "••••••••••"}</span>
       <button
         type="button"
-        onClick={() => setRevealed((v) => !v)}
-        aria-label={revealed ? "Hide secret" : "Reveal secret"}
-        className="text-ink-soft transition-colors hover:text-ink"
+        onClick={() => void toggle()}
+        disabled={loading}
+        aria-label={secret !== null ? "Hide secret" : "Reveal secret"}
+        className="text-ink-soft transition-colors hover:text-ink disabled:opacity-50"
       >
-        {revealed ? <EyeOff size={13} /> : <Eye size={13} />}
+        {secret !== null ? <EyeOff size={13} /> : <Eye size={13} />}
       </button>
       <button
         type="button"
-        onClick={() => {
-          void navigator.clipboard.writeText(value).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1200);
-          });
-        }}
+        onClick={() => void copy()}
+        disabled={loading}
         aria-label="Copy secret"
-        className="text-ink-soft transition-colors hover:text-ink"
+        className="text-ink-soft transition-colors hover:text-ink disabled:opacity-50"
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </button>
     </span>
+  );
+}
+
+/** A simple pulsing placeholder for a list that's still loading (data not yet `hydrated`). */
+export function ListSkeleton({ rows = 4 }: { rows?: number }) {
+  return (
+    <div className="animate-pulse space-y-2" aria-hidden="true">
+      {Array.from({ length: rows }, (_, index) => (
+        <div key={index} className="h-14 rounded-xl border border-line/40 bg-line/20" />
+      ))}
+    </div>
   );
 }

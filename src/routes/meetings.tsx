@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { SelectInput, TextArea, TextInput } from "@/components/forms";
-import { Empty, Panel, PanelHead, formatDate } from "@/components/kit";
+import { Empty, ListSkeleton, Panel, PanelHead, formatDate } from "@/components/kit";
 import { useOrgData, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/meetings")({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/meetings")({
 const today = () => new Date().toISOString().slice(0, 10);
 
 function Meetings() {
-  const { org, orgId, addMeeting, updateMeeting, removeMeeting } = useStore();
+  const { org, orgId, addMeeting, updateMeeting, removeMeeting, hydrated } = useStore();
   const { meetings, projects, members } = useOrgData();
   const [form, setForm] = useState({ title: "", date: today(), time: "10:00", projectId: "", notes: "" });
 
@@ -38,7 +38,7 @@ function Meetings() {
   const renderMeeting = (m: (typeof meetings)[number]) => (
     <div key={m.id} className="border-b border-line/50 px-4 py-3 last:border-b-0">
       <div className="flex items-start gap-3">
-        <div className="w-24 shrink-0 font-mono text-[10.5px] text-ink-soft">
+        <div className="w-24 shrink-0 font-mono text-[11px] text-ink-soft">
           <div className="text-ink">{formatDate(m.date)}</div>
           <div>{m.time}</div>
         </div>
@@ -49,10 +49,10 @@ function Meetings() {
               onChange={(e) => updateMeeting(m.id, { title: e.target.value })}
               className="min-w-0 flex-1 bg-transparent text-[13px] font-medium outline-none focus:text-accent"
             />
-            <span className="font-mono text-[9.5px] text-ink-soft">
+            <span className="font-mono text-[11px] text-ink-soft">
               {projects.find((p) => p.id === m.projectId)?.name ?? "No project"}
             </span>
-            <button onClick={() => removeMeeting(m.id)} className="font-mono text-[10.5px] text-ink-soft hover:text-rose">
+            <button onClick={() => removeMeeting(m.id)} className="font-mono text-[11px] text-ink-soft hover:text-rose">
               ✕
             </button>
           </div>
@@ -63,7 +63,7 @@ function Meetings() {
                 <button
                   key={mem.id}
                   onClick={() => toggleAttendee(m.id, mem.id, m.attendeeIds)}
-                  className={`rounded-full border px-2 py-0.5 font-mono text-[9.5px] transition-colors ${
+                  className={`rounded-full border px-2 py-0.5 font-mono text-[11px] transition-colors ${
                     on ? "border-accent/40 bg-accent/10 text-accent" : "border-line text-ink-soft hover:border-ink/30"
                   }`}
                 >
@@ -133,7 +133,11 @@ function Meetings() {
         <div className="mt-3 grid gap-3">
           <Panel>
             <PanelHead index="b" title="Upcoming" />
-            {upcoming.length === 0 ? (
+            {!hydrated ? (
+              <div className="p-4">
+                <ListSkeleton rows={2} />
+              </div>
+            ) : upcoming.length === 0 ? (
               <div className="p-4">
                 <Empty text="Nothing scheduled" />
               </div>
@@ -144,7 +148,11 @@ function Meetings() {
 
           <Panel>
             <PanelHead index="c" title="Past meetings" />
-            {past.length === 0 ? (
+            {!hydrated ? (
+              <div className="p-4">
+                <ListSkeleton rows={2} />
+              </div>
+            ) : past.length === 0 ? (
               <div className="p-4">
                 <Empty text="No past meetings" />
               </div>

@@ -114,3 +114,9 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
 export function apiUpload<T>(path: string, formData: FormData): Promise<T> {
   return apiRequest<T>(path, { method: "POST", body: formData });
 }
+
+/** Fetches one credential's secret. The server audit-logs every call. */
+export async function revealCredentialSecret(credentialId: string): Promise<string> {
+  const { secret } = await apiGet<{ secret: string }>(`/api/credentials/${encodeURIComponent(credentialId)}/secret`);
+  return secret;
+}

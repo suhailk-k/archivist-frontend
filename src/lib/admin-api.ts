@@ -27,3 +27,7 @@ export const readUserAccess = (userId: string) =>
 
 export const replaceUserAccess = (userId: string, access: UserAccess) =>
   apiPost<UserAccess>("/api/admin/access", { userId, ...access });
+
+/** Links a login account to a member profile (what "My Work" uses). Pass null to unlink. */
+export const setUserMemberLink = (userId: string, memberId: string | null) =>
+  apiPost<SessionUser>("/api/admin/member-link", { userId, memberId });

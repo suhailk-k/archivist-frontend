@@ -1,3 +1,5 @@
+import * as Dialog from "@radix-ui/react-dialog";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   CalendarDays,
@@ -8,16 +10,19 @@ import {
   History,
   KeyRound,
   LayoutDashboard,
+  LogOut,
   Menu,
   Settings2,
   ShieldCheck,
   Sun,
   Users,
   Video,
+  X,
 } from "lucide-react";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { AccountDialog } from "@/components/account-dialog";
 import { CommandSearch } from "@/components/command-search";
 import { useAuth } from "@/lib/auth";
 import { buildDailyPlan, todayKey } from "@/lib/daily-plan";
@@ -63,13 +68,13 @@ export function useHeaderActions(node: ReactNode) {
   });
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+/** Shared sidebar contents rendered by both the desktop rail and the mobile drawer. */
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { db, orgId, setOrgId, org, syncError, refresh } = useStore();
   const { user, logout } = useAuth();
   const data = useOrgData();
-  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const myOpenToday = user?.memberId
@@ -86,165 +91,225 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   return (
+    <>
+      <div className="border-b border-white/10 px-5 py-5">
+        <Link to="/" className="flex items-center gap-3" onClick={onNavigate}>
+          <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold italic shadow-lg shadow-indigo-900/30">
+            A
+          </div>
+          <div>
+            <div className="text-[16px] font-semibold tracking-tight">Archivist</div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-slate-400">Personal OS</div>
+          </div>
+        </Link>
+      </div>
+
+      <div className="px-4 pt-5">
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger asChild>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-left text-[12px] hover:bg-white/10 data-[state=open]:bg-white/10"
+            >
+              <span className="grid size-6 place-items-center rounded-md bg-emerald-400/20 text-[11px] font-semibold text-emerald-300">
+                {orgInitials(org?.name)}
+              </span>
+              <span className="truncate font-medium">{org?.name ?? "No organisation"}</span>
+              <ChevronDown className="ml-auto text-slate-400" size={15} />
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              align="start"
+              sideOffset={6}
+              className="z-50 w-[220px] rounded-xl border border-white/10 bg-[#1a2233] p-2 text-slate-200 shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+            >
+              {db.organisations
+                .filter((organisation) => organisation.id !== orgId)
+                .map((organisation) => (
+                  <DropdownMenu.Item
+                    key={organisation.id}
+                    onSelect={() => setOrgId(organisation.id)}
+                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-300 outline-none hover:bg-white/10 hover:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                  >
+                    <span className="size-1.5 rounded-full bg-slate-500" />
+                    {organisation.name}
+                  </DropdownMenu.Item>
+                ))}
+              <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+              <DropdownMenu.Item asChild>
+                <Link
+                  to="/organisations"
+                  onClick={onNavigate}
+                  className="block cursor-pointer rounded-lg px-2 py-1.5 text-xs text-indigo-300 outline-none hover:bg-white/10 data-[highlighted]:bg-white/10"
+                >
+                  Manage organisations →
+                </Link>
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto px-4 py-6">
+        <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</div>
+        <div className="space-y-1">
+          {NAV.map((item) => {
+            const Icon = item.icon;
+            const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={onNavigate}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
+                  active ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+                )}
+              >
+                <Icon size={17} strokeWidth={1.8} />
+                <span>{item.label}</span>
+                {counts[item.to] !== undefined ? (
+                  <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", active ? "bg-white/15" : "bg-white/10 text-slate-300")}>
+                    {counts[item.to]}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+        <div className="px-2 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Account</div>
+        <div className="space-y-1">
+          <Link
+            to="/organisations"
+            onClick={onNavigate}
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
+              pathname.startsWith("/organisations") ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+            )}
+          >
+            <Users size={17} strokeWidth={1.8} />
+            Organisations
+            <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", pathname.startsWith("/organisations") ? "bg-white/15" : "bg-white/10 text-slate-300")}>
+              {db.organisations.length}
+            </span>
+          </Link>
+          {user?.role === "superadmin" ? (
+            <Link
+              to="/admin"
+              onClick={onNavigate}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
+                pathname.startsWith("/admin") ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+              )}
+            >
+              <Settings2 size={17} strokeWidth={1.8} />
+              Access control
+            </Link>
+          ) : null}
+        </div>
+      </nav>
+
+      {syncError ? (
+        <button
+          type="button"
+          onClick={() => void refresh().catch(() => toast.error("Archivist backend is still unreachable"))}
+          className="mx-4 mb-3 rounded-xl border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-left text-xs text-rose-200"
+        >
+          Backend offline · retry
+        </button>
+      ) : null}
+      {user ? (
+        <div className="border-t border-white/10 px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid size-9 place-items-center rounded-full bg-accent font-semibold">{user.displayName.slice(0, 1).toUpperCase()}</div>
+            <button
+              type="button"
+              onClick={() => setAccountOpen(true)}
+              className="min-w-0 rounded-lg text-left hover:text-white"
+              aria-label="Account settings"
+            >
+              <div className="truncate text-[12px] font-medium">{user.displayName}</div>
+              <div className="text-[11px] text-slate-400">{user.role === "superadmin" ? "Super Admin" : "Member"} · Account</div>
+            </button>
+            <button
+              type="button"
+              disabled={signingOut}
+              onClick={() => {
+                setSigningOut(true);
+                void logout()
+                  .catch(() => toast.error("Could not sign out"))
+                  .finally(() => setSigningOut(false));
+              }}
+              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+              aria-label="Sign out"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+          <AccountDialog open={accountOpen} onClose={() => setAccountOpen(false)} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const { org } = useStore();
+  const [headerActions, setHeaderActions] = useState<ReactNode>(null);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  return (
     <HeaderActionsContext.Provider value={setHeaderActions}>
       <div className="min-h-screen bg-paper text-ink antialiased">
         <div className="flex min-h-screen">
-          <aside className="hidden w-[252px] shrink-0 flex-col bg-[#111827] text-white md:flex">
-            <div className="border-b border-white/10 px-5 py-5">
-              <Link to="/" className="flex items-center gap-3">
-                <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold italic shadow-lg shadow-indigo-900/30">
-                  A
-                </div>
-                <div>
-                  <div className="text-[16px] font-semibold tracking-tight">Archivist</div>
-                  <div className="mt-1 text-[9px] uppercase tracking-[0.2em] text-slate-400">Personal OS</div>
-                </div>
-              </Link>
-            </div>
-
-            <div className="px-4 pt-5">
-              <button
-                type="button"
-                onClick={() => setSwitcherOpen((open) => !open)}
-                className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-left text-[12px] hover:bg-white/10"
-              >
-                <span className="grid size-6 place-items-center rounded-md bg-emerald-400/20 text-[10px] font-semibold text-emerald-300">
-                  {orgInitials(org?.name)}
-                </span>
-                <span className="truncate font-medium">{org?.name ?? "No organisation"}</span>
-                <ChevronDown className="ml-auto text-slate-400" size={15} />
-              </button>
-              {switcherOpen ? (
-                <div className="mt-2 space-y-1 rounded-xl bg-white/[0.06] p-2">
-                  {db.organisations
-                    .filter((organisation) => organisation.id !== orgId)
-                    .map((organisation) => (
-                      <button
-                        key={organisation.id}
-                        type="button"
-                        onClick={() => {
-                          setOrgId(organisation.id);
-                          setSwitcherOpen(false);
-                        }}
-                        className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-slate-300 hover:bg-white/10 hover:text-white"
-                      >
-                        <span className="size-1.5 rounded-full bg-slate-500" />
-                        {organisation.name}
-                      </button>
-                    ))}
-                  <Link
-                    to="/organisations"
-                    onClick={() => setSwitcherOpen(false)}
-                    className="block rounded-lg px-2 py-1.5 text-xs text-indigo-300 hover:bg-white/10"
-                  >
-                    Manage organisations →
-                  </Link>
-                </div>
-              ) : null}
-            </div>
-
-            <nav className="flex-1 overflow-y-auto px-4 py-6">
-              <div className="px-2 pb-2 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</div>
-              <div className="space-y-1">
-                {NAV.map((item) => {
-                  const Icon = item.icon;
-                  const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
-                  return (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className={cn(
-                        "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                        active ? "bg-[#5146e5] text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
-                      )}
-                    >
-                      <Icon size={17} strokeWidth={1.8} />
-                      <span>{item.label}</span>
-                      {counts[item.to] !== undefined ? (
-                        <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px]", active ? "bg-white/15" : "bg-white/10 text-slate-300")}>
-                          {counts[item.to]}
-                        </span>
-                      ) : null}
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="px-2 pb-2 pt-7 text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">Account</div>
-              <div className="space-y-1">
-                <Link
-                  to="/organisations"
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                    pathname.startsWith("/organisations") ? "bg-[#5146e5] text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
-                  )}
-                >
-                  <Users size={17} strokeWidth={1.8} />
-                  Organisations
-                  <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[10px]", pathname.startsWith("/organisations") ? "bg-white/15" : "bg-white/10 text-slate-300")}>
-                    {db.organisations.length}
-                  </span>
-                </Link>
-                {user?.role === "superadmin" ? (
-                  <Link
-                    to="/admin"
-                    className={cn(
-                      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                      pathname.startsWith("/admin") ? "bg-[#5146e5] text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
-                    )}
-                  >
-                    <Settings2 size={17} strokeWidth={1.8} />
-                    Access control
-                  </Link>
-                ) : null}
-              </div>
-            </nav>
-
-            {syncError ? (
-              <button
-                type="button"
-                onClick={() => void refresh().catch(() => toast.error("Archivist backend is still unreachable"))}
-                className="mx-4 mb-3 rounded-xl border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-left text-xs text-rose-200"
-              >
-                Backend offline · retry
-              </button>
-            ) : null}
-            {user ? (
-              <div className="border-t border-white/10 px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="grid size-9 place-items-center rounded-full bg-indigo-500 font-semibold">{user.displayName.slice(0, 1).toUpperCase()}</div>
-                  <div className="min-w-0">
-                    <div className="truncate text-[12px] font-medium">{user.displayName}</div>
-                    <div className="text-[10px] text-slate-400">{user.role === "superadmin" ? "Super Admin" : "Member"}</div>
-                  </div>
-                  <button
-                    type="button"
-                    disabled={signingOut}
-                    onClick={() => {
-                      setSigningOut(true);
-                      void logout()
-                        .catch(() => toast.error("Could not sign out"))
-                        .finally(() => setSigningOut(false));
-                    }}
-                    className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-                    aria-label="Sign out"
-                  >
-                    <Menu size={16} />
-                  </button>
-                </div>
-              </div>
-            ) : null}
+          <aside className="hidden w-[252px] shrink-0 flex-col bg-sidebar-chrome text-white md:flex">
+            <SidebarContent />
           </aside>
 
+          <Dialog.Root open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+            <Dialog.Portal>
+              <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 md:hidden" />
+              <Dialog.Content
+                className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-sidebar-chrome text-white md:hidden"
+                aria-describedby={undefined}
+              >
+                <Dialog.Title className="sr-only">Navigation</Dialog.Title>
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    aria-label="Close navigation"
+                    className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                  >
+                    <X size={18} />
+                  </button>
+                </Dialog.Close>
+                <SidebarContent onNavigate={() => setMobileNavOpen(false)} />
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog.Root>
+
           <div className="min-w-0 flex-1">
-            <header className="flex h-[68px] items-center gap-4 border-b border-slate-200 bg-white px-5 md:px-8">
-              <button type="button" className="rounded-lg p-2 text-slate-500 md:hidden" aria-label="Open navigation">
+            <header className="flex h-[68px] items-center gap-4 border-b border-line bg-panel px-5 md:px-8">
+              <button
+                type="button"
+                onClick={() => setMobileNavOpen(true)}
+                className="rounded-lg p-2 text-ink-soft md:hidden"
+                aria-label="Open navigation"
+                aria-haspopup="dialog"
+                aria-expanded={mobileNavOpen}
+              >
                 <Menu size={19} />
               </button>
               <div className="min-w-0">
-                <div className="truncate text-[21px] font-bold tracking-tight text-slate-900">Archivist</div>
-                <div className="text-[10px] tracking-[0.16em] text-slate-400">
-                  {org?.name ?? "No organisation"} <span className="px-1">•</span> {sectionLabel(pathname)}
-                </div>
+                <div className="truncate text-[21px] font-bold tracking-tight text-ink">{sectionLabel(pathname)}</div>
+                <div className="text-[11px] tracking-[0.16em] text-ink-soft">{org?.name ?? "No organisation"}</div>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <CommandSearch />
@@ -273,7 +338,7 @@ export function PageHeader({
       <div className="flex items-center gap-4 px-6 py-3.5 md:px-8">
         <div className="min-w-0">
           <h1 className="truncate font-display text-[22px] font-medium tracking-tight">{title}</h1>
-          <div className="mt-0.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-soft">{crumb}</div>
+          <div className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-soft">{crumb}</div>
         </div>
         {action ? <div className="ml-auto flex items-center gap-2.5">{action}</div> : null}
       </div>

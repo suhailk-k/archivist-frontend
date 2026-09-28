@@ -24,7 +24,7 @@ export function MonthView({ ctx }: { ctx: PlannerContext }) {
         <Panel className="overflow-hidden">
           <div className="grid grid-cols-7 border-b border-line/40">
             {WEEKDAY_HEADINGS.map((heading) => (
-              <div key={heading} className="px-2 py-2 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">
+              <div key={heading} className="px-2 py-2 text-center font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">
                 {heading}
               </div>
             ))}
@@ -99,7 +99,7 @@ function DayCell({
         {tasks.length > 0 ? (
           <span
             className={cn(
-              "rounded px-1 font-mono text-[9px]",
+              "rounded px-1 font-mono text-[11px]",
               bucket.open.length === 0 ? "bg-verd/15 text-verd" : "bg-accent/10 text-accent",
             )}
           >
@@ -112,7 +112,7 @@ function DayCell({
           <div
             key={task.id}
             className={cn(
-              "truncate rounded px-1 text-[10.5px] leading-4",
+              "truncate rounded px-1 text-[11px] leading-4",
               task.done ? "text-ink-soft line-through" : "bg-accent/10 text-ink",
               task.priority === "high" && !task.done && "bg-rose/15",
             )}
@@ -120,7 +120,7 @@ function DayCell({
             {task.title}
           </div>
         ))}
-        {hidden > 0 ? <div className="px-1 font-mono text-[9.5px] text-ink-soft">+{hidden} more</div> : null}
+        {hidden > 0 ? <div className="px-1 font-mono text-[11px] text-ink-soft">+{hidden} more</div> : null}
       </div>
     </button>
   );
@@ -153,7 +153,7 @@ function WeekSummaryRow({
         {shortDay(first)} – {shortDay(last)}
       </span>
       <ProgressBar value={percent(done, total)} />
-      <span className="w-10 shrink-0 text-right font-mono text-[10px] text-ink-soft">
+      <span className="w-10 shrink-0 text-right font-mono text-[11px] text-ink-soft">
         {done}/{total}
       </span>
     </button>

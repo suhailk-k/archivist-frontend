@@ -98,7 +98,7 @@ export function TeamStrip({
               <span className="block truncate text-[12.5px] font-medium">{m.name}</span>
               <span className="mt-1 flex items-center gap-1.5">
                 <ProgressBar value={percent(stats.done, stats.total)} />
-                <span className="font-mono text-[9.5px] text-ink-soft">
+                <span className="font-mono text-[11px] text-ink-soft">
                   {stats.done}/{stats.total}
                 </span>
               </span>
@@ -177,7 +177,7 @@ export function RowAction({ children, onClick, label }: { children: ReactNode; o
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="rounded-md px-1.5 py-1 font-mono text-[10px] text-ink-soft hover:bg-accent/10 hover:text-accent"
+      className="rounded-md px-1.5 py-1 font-mono text-[11px] text-ink-soft hover:bg-accent/10 hover:text-accent"
     >
       {children}
     </button>
@@ -216,7 +216,7 @@ export function TaskRow({ task, project, today, onToggle, showSchedule = false, 
       <div className="min-w-0 flex-1">
         <div className={cn("truncate text-[13px]", task.done && "text-ink-soft line-through")}>{task.title}</div>
         {hasMeta ? (
-          <div className="mt-0.5 flex gap-2 font-mono text-[9.5px] text-ink-soft">
+          <div className="mt-0.5 flex gap-2 font-mono text-[11px] text-ink-soft">
             {project ? <span className="truncate">{project}</span> : null}
             {task.dueDate ? <span className={cn(isOverdue && "text-rose")}>due {task.dueDate}</span> : null}
             {plannedLabel ? <span>{plannedLabel}</span> : null}

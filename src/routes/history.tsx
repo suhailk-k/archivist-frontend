@@ -38,7 +38,7 @@ function History() {
         <div className="mt-3 flex flex-wrap gap-1.5">
           <button
             onClick={() => setProjectId("all")}
-            className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+            className={`rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
               projectId === "all" ? "border-ink bg-ink text-paper" : "border-line text-ink-soft hover:border-ink/30"
             }`}
           >
@@ -48,7 +48,7 @@ function History() {
             <button
               key={p.id}
               onClick={() => setProjectId(p.id)}
-              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.12em] transition-colors ${
+              className={`rounded-full border px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
                 projectId === p.id ? "border-ink bg-ink text-paper" : "border-line text-ink-soft hover:border-ink/30"
               }`}
             >

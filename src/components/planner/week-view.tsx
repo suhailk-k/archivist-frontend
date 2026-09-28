@@ -102,7 +102,7 @@ function DayColumn({ ctx, day, bucket }: { ctx: PlannerContext; day: DateKey; bu
           <span className={cn("text-[12.5px] font-semibold", isToday && "text-accent", isPast && !isToday && "text-ink-soft")}>
             {shortDay(day)}
           </span>
-          <span className="font-mono text-[9.5px] text-ink-soft">
+          <span className="font-mono text-[11px] text-ink-soft">
             {bucket.done.length}/{total}
           </span>
         </div>
@@ -180,7 +180,7 @@ function DayPicker({ days, onPick }: { days: DateKey[]; onPick: (day: DateKey) =
       aria-label="Plan on day"
       value=""
       onChange={(e) => e.target.value && onPick(e.target.value)}
-      className="rounded-md border border-line bg-panel px-1.5 py-1 font-mono text-[10px] text-ink-soft"
+      className="rounded-md border border-line bg-panel px-1.5 py-1 font-mono text-[11px] text-ink-soft"
     >
       <option value="">Plan on…</option>
       {days.map((day) => (

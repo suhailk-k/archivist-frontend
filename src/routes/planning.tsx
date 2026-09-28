@@ -43,7 +43,7 @@ function Planning() {
                     <Link
                       to="/projects/$projectId"
                       params={{ projectId: p.id }}
-                      className="font-mono text-[10.5px] text-accent hover:underline"
+                      className="font-mono text-[11px] text-accent hover:underline"
                     >
                       Open plan →
                     </Link>
@@ -53,7 +53,7 @@ function Planning() {
                   <div className="flex flex-wrap items-center gap-3">
                     <Pill tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABEL[p.status]}</Pill>
                     <Progress value={projectProgress(tasks, p.id)} tone={PROJECT_STATUS_TONE[p.status]} />
-                    <span className="font-mono text-[10px] text-ink-soft">
+                    <span className="font-mono text-[11px] text-ink-soft">
                       {p.startDate ? formatDate(p.startDate) : "—"} → {p.dueDate ? formatDate(p.dueDate) : "—"}
                     </span>
                   </div>
@@ -78,7 +78,7 @@ function Planning() {
                                 </div>
                               ))}
                             </div>
-                            <div className="mt-2 font-mono text-[9.5px] text-ink-soft">
+                            <div className="mt-2 font-mono text-[11px] text-ink-soft">
                               {done}/{inPhase.length} complete
                             </div>
                           </div>
@@ -108,7 +108,7 @@ function Planning() {
                       }`}
                     />
                     <div className={`text-[12.5px] leading-snug ${m.done ? "text-ink-soft line-through" : ""}`}>{m.title}</div>
-                    <div className="mt-0.5 font-mono text-[9.5px] text-ink-soft">
+                    <div className="mt-0.5 font-mono text-[11px] text-ink-soft">
                       {formatDate(m.date)} · {project?.name}
                     </div>
                   </div>

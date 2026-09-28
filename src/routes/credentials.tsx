@@ -30,7 +30,7 @@ export const Route = createFileRoute("/credentials")({
 const ORG_SCOPE = "org";
 
 function CredentialsPage() {
-  const { org, orgId, addCredential, updateCredential, removeCredential } = useStore();
+  const { db, org, orgId, addCredential, updateCredential, removeCredential } = useStore();
   const { credentials, projects } = useOrgData();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
@@ -133,7 +133,11 @@ function CredentialsPage() {
               ))}
             </SelectInput>
           </Field>
-          <CredentialFormFields form={form} onChange={setForm} />
+          <CredentialFormFields
+            form={form}
+            onChange={setForm}
+            hasStoredSecret={Boolean(editingId && db.credentials.find((c) => c.id === editingId)?.hasSecret)}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton>
             <PrimaryButton onClick={save}>{editingId ? "Save changes" : "Add credential"}</PrimaryButton>

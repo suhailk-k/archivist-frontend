@@ -35,17 +35,17 @@ export function CommandSearch() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-10 w-[260px] items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-400 hover:border-slate-300 hover:bg-white lg:flex"
+        className="hidden h-10 w-[260px] items-center gap-2 rounded-xl border border-line bg-paper px-3 text-xs text-ink-soft/70 hover:border-line hover:bg-panel lg:flex"
       >
         <Search size={16} />
         <span>Search projects, tasks, docs...</span>
-        <kbd className="ml-auto rounded-md bg-white px-1.5 py-1 text-[10px] text-slate-500">⌘K</kbd>
+        <kbd className="ml-auto rounded-md bg-panel px-1.5 py-1 text-[11px] text-ink-soft">⌘K</kbd>
       </button>
       <button
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Search"
-        className="grid size-10 place-items-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 lg:hidden"
+        className="grid size-10 place-items-center rounded-xl border border-line bg-panel text-ink-soft hover:bg-paper lg:hidden"
       >
         <Search size={17} />
       </button>
@@ -92,30 +92,30 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/40 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/40 px-4 pt-[12vh] backdrop-blur-sm" onMouseDown={onClose}>
       <div
         role="dialog"
         aria-label="Search"
-        className="w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="w-full max-w-xl overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl"
         onMouseDown={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center gap-3 border-b border-slate-200 px-4">
-          <Search size={17} className="text-slate-400" />
+        <div className="flex items-center gap-3 border-b border-line px-4">
+          <Search size={17} className="text-ink-soft/70" />
           <input
             ref={inputRef}
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Search projects, tasks, docs, meetings..."
-            className="h-12 flex-1 bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+            className="h-12 flex-1 bg-transparent text-sm text-ink outline-none placeholder:text-ink-soft/70"
           />
-          <kbd className="rounded-md bg-slate-100 px-1.5 py-1 text-[10px] text-slate-500">Esc</kbd>
+          <kbd className="rounded-md bg-line/20 px-1.5 py-1 text-[11px] text-ink-soft">Esc</kbd>
         </div>
         <div className="max-h-[55vh] overflow-y-auto p-2">
           {!query.trim() ? (
-            <div className="px-3 py-8 text-center text-xs text-slate-400">Type to search across this organisation</div>
+            <div className="px-3 py-8 text-center text-xs text-ink-soft/70">Type to search across this organisation</div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-8 text-center text-xs text-slate-400">No results for “{query.trim()}”</div>
+            <div className="px-3 py-8 text-center text-xs text-ink-soft/70">No results for “{query.trim()}”</div>
           ) : (
             results.map((result, index) => {
               const meta = KIND_META[result.kind];
@@ -124,7 +124,7 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
               return (
                 <div key={`${result.kind}-${result.id}`}>
                   {showHeading ? (
-                    <div className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{meta.label}</div>
+                    <div className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-soft/70">{meta.label}</div>
                   ) : null}
                   <button
                     type="button"
@@ -132,12 +132,12 @@ function SearchDialog({ onClose }: { onClose: () => void }) {
                     onClick={() => select(result)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left",
-                      index === active ? "bg-indigo-50 text-indigo-900" : "text-slate-700",
+                      index === active ? "bg-accent-soft text-accent" : "text-ink",
                     )}
                   >
-                    <Icon size={15} className="shrink-0 text-slate-400" />
+                    <Icon size={15} className="shrink-0 text-ink-soft/70" />
                     <span className="truncate text-[13px] font-medium">{result.title}</span>
-                    <span className="ml-auto shrink-0 truncate text-[11px] text-slate-400">{result.subtitle}</span>
+                    <span className="ml-auto shrink-0 truncate text-[11px] text-ink-soft/70">{result.subtitle}</span>
                   </button>
                 </div>
               );

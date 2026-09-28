@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { GhostButton, PrimaryButton } from "@/components/app-shell";
 import { ConfirmModal, Field, Modal, TextArea, TextInput } from "@/components/forms";
 import { Empty, SecretValue } from "@/components/kit";
+import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
 import { CREDENTIAL_CATEGORY_SUGGESTIONS, type Credential, type ID } from "@/lib/types";
 
@@ -34,7 +35,8 @@ export function credentialFormFromRecord(credential: Credential): CredentialForm
     name: credential.name,
     category: credential.category,
     username: credential.username,
-    secret: credential.secret,
+    // Secrets aren't held client-side; a blank field means "keep the stored one".
+    secret: "",
     url: credential.url,
     usedFor: credential.usedFor,
     notes: credential.notes,
@@ -55,9 +57,12 @@ export function CredentialCategoryDatalist() {
 export function CredentialFormFields({
   form,
   onChange,
+  hasStoredSecret = false,
 }: {
   form: CredentialFormState;
   onChange: (form: CredentialFormState) => void;
+  /** Editing a credential that already has a secret: blank means "keep it". */
+  hasStoredSecret?: boolean;
 }) {
   return (
     <>
@@ -82,6 +87,7 @@ export function CredentialFormFields({
             value={form.secret}
             onChange={(e) => onChange({ ...form, secret: e.target.value })}
             autoComplete="new-password"
+            placeholder={hasStoredSecret ? "Leave blank to keep current secret" : undefined}
           />
         </Field>
       </div>
@@ -119,9 +125,9 @@ export function CredentialRow({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[13.5px] font-medium">{credential.name}</span>
             {credential.category ? (
-              <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[10px] font-medium text-accent">{credential.category}</span>
+              <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent">{credential.category}</span>
             ) : null}
-            {scopeLabel ? <span className="rounded-md bg-ink/5 px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">{scopeLabel}</span> : null}
+            {scopeLabel ? <span className="rounded-md bg-ink/5 px-1.5 py-0.5 text-[11px] font-medium text-ink-soft">{scopeLabel}</span> : null}
           </div>
           {credential.usedFor ? <p className="mt-1 text-[12px] text-ink-soft">Used for: {credential.usedFor}</p> : null}
         </div>
@@ -151,9 +157,9 @@ export function CredentialRow({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-ink-soft">Secret</span>
-          <SecretValue value={credential.secret} />
+          <SecretValue credentialId={credential.id} hasSecret={Boolean(credential.hasSecret)} />
         </div>
-        {credential.url ? (
+        {credential.url && isHttpUrl(credential.url) ? (
           <a
             href={credential.url}
             target="_blank"
@@ -163,6 +169,8 @@ export function CredentialRow({
             <span className="truncate">{credential.url}</span>
             <ExternalLink size={12} className="shrink-0" />
           </a>
+        ) : credential.url ? (
+          <span className="truncate text-ink-soft sm:col-span-2">{credential.url}</span>
         ) : null}
       </div>
       {credential.notes ? <p className="mt-2 text-[12px] text-ink-soft">{credential.notes}</p> : null}
@@ -248,7 +256,11 @@ export function CredentialsPanel({ orgId, projectId }: { orgId: ID; projectId: I
 
       <Modal open={open} title={editingId ? "Edit credential" : "Add credential"} onClose={() => setOpen(false)}>
         <div className="space-y-3">
-          <CredentialFormFields form={form} onChange={setForm} />
+          <CredentialFormFields
+            form={form}
+            onChange={setForm}
+            hasStoredSecret={Boolean(editingId && credentials.find((c) => c.id === editingId)?.hasSecret)}
+          />
           <div className="flex justify-end gap-2 pt-1">
             <GhostButton onClick={() => setOpen(false)}>Cancel</GhostButton>
             <PrimaryButton onClick={save}>{editingId ? "Save changes" : "Add credential"}</PrimaryButton>

@@ -8,6 +8,7 @@ import { CreateDocModal, EditDocModal } from "@/components/edit-doc-modal";
 import { ConfirmModal } from "@/components/forms";
 import { relativeTime } from "@/components/kit";
 import { fileUrl } from "@/lib/api-client";
+import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
 import type { Doc, ID, Member } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -99,22 +100,22 @@ export function ProjectDocs({ projectId, orgId }: ProjectDocsProps) {
         }}
       />
 
-      <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <div className="rounded-xl border border-line bg-panel p-3 shadow-sm">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-ink">Documents</h2>
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-ink-soft">
               {plural(docs.length, "document")} · {plural(fileCount, "file")}
             </p>
           </div>
           <label className="relative ml-auto flex min-w-[12rem] flex-1 items-center sm:max-w-xs">
-            <Search size={14} className="pointer-events-none absolute left-2.5 text-slate-400" />
+            <Search size={14} className="pointer-events-none absolute left-2.5 text-ink-soft/70" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search title, notes, file…"
               aria-label="Search documents"
-              className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-[12.5px] outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
+              className="w-full rounded-lg border border-line bg-panel py-1.5 pl-8 pr-3 text-[12.5px] outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
           </label>
           <PrimaryButton onClick={() => setCreating(true)}>
@@ -136,7 +137,7 @@ export function ProjectDocs({ projectId, orgId }: ProjectDocsProps) {
       {docs.length === 0 ? (
         <EmptyDocs onCreate={() => setCreating(true)} />
       ) : visible.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 bg-white px-4 py-8 text-center text-[12.5px] text-slate-500">
+        <div className="rounded-xl border border-dashed border-line bg-panel px-4 py-8 text-center text-[12.5px] text-ink-soft">
           No documents match your filters.
         </div>
       ) : (
@@ -164,23 +165,23 @@ function KindChip({ label, count, isActive, onClick }: { label: string; count: n
       onClick={onClick}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 transition-colors",
-        isActive ? "bg-accent text-white ring-accent" : "bg-white text-slate-600 ring-slate-200 hover:ring-accent/40",
+        isActive ? "bg-accent text-white ring-accent" : "bg-panel text-ink-soft ring-line hover:ring-accent/40",
       )}
     >
       {label}
-      <span className={cn("font-mono text-[10px]", isActive ? "text-white/80" : "text-slate-400")}>{count}</span>
+      <span className={cn("font-mono text-[11px]", isActive ? "text-white/80" : "text-ink-soft/70")}>{count}</span>
     </button>
   );
 }
 
 function EmptyDocs({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+    <div className="rounded-xl border border-dashed border-line bg-panel px-6 py-10 text-center">
       <div className="mx-auto grid size-10 place-items-center rounded-full bg-accent/10 text-accent">
         <FileText size={18} />
       </div>
       <h3 className="mt-3 text-[14px] font-semibold text-ink">No documents yet</h3>
-      <p className="mx-auto mt-1 max-w-sm text-[12.5px] text-slate-500">
+      <p className="mx-auto mt-1 max-w-sm text-[12.5px] text-ink-soft">
         Keep specs, environment setup, contracts and handover notes next to the work.
       </p>
       <button type="button" onClick={onCreate} className="mt-4 text-[12.5px] font-medium text-accent hover:underline">
@@ -200,7 +201,7 @@ interface DocCardProps {
 function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
   const Icon = docIcon(doc);
   return (
-    <li className="group rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition-colors hover:border-accent/30">
+    <li className="group rounded-xl border border-line bg-panel p-3.5 shadow-sm transition-colors hover:border-accent/30">
       <div className="flex gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
           <Icon size={16} />
@@ -209,20 +210,20 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="min-w-0 truncate text-[13.5px] font-semibold text-ink">{doc.title}</h3>
-            {doc.kind ? <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">{doc.kind}</span> : null}
+            {doc.kind ? <span className="rounded-md bg-line/20 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft">{doc.kind}</span> : null}
           </div>
 
-          {doc.notes ? <DocNotes notes={doc.notes} /> : <p className="mt-1 text-[12px] italic text-slate-400">No notes</p>}
+          {doc.notes ? <DocNotes notes={doc.notes} /> : <p className="mt-1 text-[12px] italic text-ink-soft/70">No notes</p>}
 
           {doc.fileId || doc.link ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <AttachmentChip doc={doc} />
-              {doc.link ? (
+              {doc.link && isHttpUrl(doc.link) ? (
                 <a
                   href={doc.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-slate-200 px-2 py-1 text-[11px] text-slate-600 hover:border-accent/40 hover:text-accent"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-line px-2 py-1 text-[11px] text-ink-soft hover:border-accent/40 hover:text-accent"
                 >
                   <ExternalLink size={12} />
                   <span className="truncate">{hostOf(doc.link)}</span>
@@ -241,14 +242,14 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
               <Trash2 size={13} />
             </IconAction>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+          <div className="flex items-center gap-1.5 text-[11px] text-ink-soft">
             {owner ? (
               <>
-                <span className="grid size-5 place-items-center rounded-full bg-slate-100 text-[9px] font-semibold text-slate-600" aria-hidden>
+                <span className="grid size-5 place-items-center rounded-full bg-line/20 text-[11px] font-semibold text-ink-soft" aria-hidden>
                   {initials(owner.name)}
                 </span>
                 <span className="hidden sm:inline">{owner.name}</span>
-                <span className="text-slate-300">·</span>
+                <span className="text-ink-soft/50">·</span>
               </>
             ) : null}
             <time dateTime={doc.updatedAt} title={new Date(doc.updatedAt).toLocaleString()}>
@@ -266,7 +267,7 @@ function DocNotes({ notes }: { notes: string }) {
   const isLong = notes.length > NOTES_PREVIEW_CHARS || notes.split("\n").length > 2;
   return (
     <div className="mt-1.5">
-      <p className={cn("whitespace-pre-line text-[12.5px] leading-relaxed text-slate-600", isLong && !isExpanded && "line-clamp-2")}>{notes}</p>
+      <p className={cn("whitespace-pre-line text-[12.5px] leading-relaxed text-ink-soft", isLong && !isExpanded && "line-clamp-2")}>{notes}</p>
       {isLong ? (
         <button type="button" onClick={() => setExpanded(!isExpanded)} className="mt-0.5 text-[11px] font-medium text-accent hover:underline">
           {isExpanded ? "Show less" : "Show more"}
@@ -279,12 +280,12 @@ function DocNotes({ notes }: { notes: string }) {
 function AttachmentChip({ doc }: { doc: Doc }) {
   if (!doc.fileId) return null;
   return (
-    <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-slate-200 py-0.5 pl-2 pr-0.5 text-[11px] text-slate-600">
-      <FileText size={12} className="shrink-0 text-slate-400" />
+    <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-line py-0.5 pl-2 pr-0.5 text-[11px] text-ink-soft">
+      <FileText size={12} className="shrink-0 text-ink-soft/70" />
       <a href={fileUrl(doc.fileId)} target="_blank" rel="noreferrer" className="truncate hover:text-accent hover:underline" title="Open preview">
         {doc.fileName || "file"}
       </a>
-      {doc.fileSize > 0 ? <span className="shrink-0 text-slate-400">· {formatBytes(doc.fileSize)}</span> : null}
+      {doc.fileSize > 0 ? <span className="shrink-0 text-ink-soft/70">· {formatBytes(doc.fileSize)}</span> : null}
       <DocDownloadButton doc={doc} />
     </span>
   );
@@ -297,7 +298,7 @@ function IconAction({ label, onClick, className, children }: { label: string; on
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={cn("grid size-7 place-items-center rounded-md text-slate-400 hover:bg-slate-100", className)}
+      className={cn("grid size-7 place-items-center rounded-md text-ink-soft/70 hover:bg-line/20", className)}
     >
       {children}
     </button>

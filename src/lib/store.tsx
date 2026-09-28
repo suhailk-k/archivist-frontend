@@ -8,9 +8,11 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiGet, apiPost } from "./api-client";
+import { toast } from "sonner";
+import { ApiRequestError, apiGet, apiPost } from "./api-client";
 import { useAuth } from "./auth";
 import { normalizeProjectLinks } from "./project-links";
+import { collectVersions, credentialEdit, stampVersion, versionKey, type Command, type RecordEntity, type StoredRecord } from "./sync";
 import type {
   Activity,
   Credential,
@@ -27,16 +29,20 @@ import type {
   Task,
 } from "./types";
 
-export const uid = () => Math.random().toString(36).slice(2, 10);
+export const uid = () => crypto.randomUUID();
 const nowIso = () => new Date().toISOString();
 const ACTIVITY_LIMIT = 250;
+/** Background refresh cadence while the tab is visible and nothing is waiting to save. */
+const POLL_INTERVAL_MS = 30_000;
 
-type RecordEntity = keyof Database;
-type StoredRecord = { id: ID } & Record<string, unknown>;
 
-type Command =
-  | { entity: RecordEntity; operation: "upsert"; record: StoredRecord }
-  | { entity: RecordEntity; operation: "delete"; id: ID };
+
+interface AppliedRecord {
+  entity: RecordEntity;
+  id: ID;
+  /** Null after a delete. */
+  version: number | null;
+}
 
 interface Change {
   db: Database;
@@ -121,8 +127,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     current.current = db;
   }, [db]);
 
-  const load = useCallback(async () => {
-    const remote = await apiGet<Database>("/api/data");
+  /** Latest server version per record; sent with each upsert so the server can detect conflicts. */
+  const versions = useRef(new Map<string, number>());
+  /** Saves go out one batch at a time, so each batch is stamped with versions from the last reply. */
+  const queue = useRef<Promise<void>>(Promise.resolve());
+  const pendingSaves = useRef(0);
+  /** True after a save failed and the user hasn't retried or discarded — background refresh must not overwrite it. */
+  const hasUnsavedChanges = useRef(false);
+  /** Bumped on every local change; a refresh that started before a change must not apply its stale result. */
+  const changeSeq = useRef(0);
+  const sendRef = useRef<(commands: Command[]) => void>(() => undefined);
+  /** Batches that failed to save, in order; Retry resends all of them. */
+  const failedBatches = useRef<Command[][]>([]);
+
+  const applyRemote = useCallback((remote: Database) => {
+    versions.current = collectVersions(remote);
     const normalized: Database = {
       ...remote,
       projects: remote.projects.map((project) => ({ ...project, links: normalizeProjectLinks(project.links) })),
@@ -144,6 +163,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     );
     setSyncError(null);
   }, []);
+
+  const load = useCallback(async () => {
+    applyRemote(await apiGet<Database>("/api/data"));
+    hasUnsavedChanges.current = false;
+    failedBatches.current = [];
+  }, [applyRemote]);
+
+  /** Background refresh: skipped, or its result dropped, whenever it could clobber local edits. */
+  const refreshIfIdle = useCallback(async () => {
+    if (pendingSaves.current > 0 || hasUnsavedChanges.current) return;
+    const startedAt = changeSeq.current;
+    const remote = await apiGet<Database>("/api/data");
+    if (startedAt !== changeSeq.current || pendingSaves.current > 0 || hasUnsavedChanges.current) return;
+    applyRemote(remote);
+  }, [applyRemote]);
 
   const refresh = useCallback(async () => {
     try {
@@ -182,22 +216,90 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [user, load]);
 
-  const send = useCallback(
-    (commands: Command[]) => {
-      if (commands.length === 0) return;
-      void apiPost("/api/data/commands", { commands })
-        .then(() => setSyncError(null))
-        .catch(async (error: unknown) => {
-          setSyncError(error instanceof Error ? error.message : "Could not save changes.");
-          await load().catch(() => undefined);
-        });
+  useEffect(() => {
+    if (!user) return;
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      void refreshIfIdle().catch(() => undefined);
+    };
+    const timer = window.setInterval(tick, POLL_INTERVAL_MS);
+    window.addEventListener("focus", tick);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", tick);
+    };
+  }, [user, refreshIfIdle]);
+
+  const transmit = useCallback(
+    async (commands: Command[]) => {
+      const result = await apiPost<{ records: AppliedRecord[] }>("/api/data/commands", { commands: commands.map((command) => stampVersion(command, versions.current)) });
+      for (const entry of result.records) {
+        const key = versionKey(entry.entity, entry.id);
+        if (entry.version === null) versions.current.delete(key);
+        else versions.current.set(key, entry.version);
+      }
+    },
+    [],
+  );
+
+  const handleSaveError = useCallback(
+    (error: unknown, commands: Command[]) => {
+      if (error instanceof ApiRequestError && error.status === 401) return; // AuthProvider signs the user out
+      const message = error instanceof Error ? error.message : "Could not save changes.";
+      if (error instanceof ApiRequestError && error.code === "CONFLICT") {
+        // Someone else saved first. Their version wins; show it rather than silently overwriting it.
+        toast.error("Someone else changed this at the same time", { description: `${message} Your view now shows the latest version.` });
+        void load().catch(() => undefined);
+        return;
+      }
+      // Keep the user's edits on screen and let them decide, instead of reloading them away.
+      hasUnsavedChanges.current = true;
+      failedBatches.current = [...failedBatches.current, commands];
+      setSyncError(message);
+      toast.error("Couldn't save your changes", {
+        id: "save-error",
+        description: message,
+        duration: Number.POSITIVE_INFINITY,
+        action: {
+          label: "Retry",
+          onClick: () => {
+            const batches = failedBatches.current;
+            failedBatches.current = [];
+            for (const batch of batches) sendRef.current(batch);
+          },
+        },
+        cancel: { label: "Discard", onClick: () => void load().catch(() => undefined) },
+      });
     },
     [load],
   );
 
+  const send = useCallback(
+    (commands: Command[]) => {
+      if (commands.length === 0) return;
+      pendingSaves.current += 1;
+      queue.current = queue.current
+        .then(() => transmit(commands))
+        .then(() => {
+          hasUnsavedChanges.current = false;
+          setSyncError(null);
+        })
+        .catch((error: unknown) => handleSaveError(error, commands))
+        .finally(() => {
+          pendingSaves.current -= 1;
+        });
+    },
+    [transmit, handleSaveError],
+  );
+
+  useEffect(() => {
+    sendRef.current = send;
+  }, [send]);
+
   const apply = useCallback(
     (produce: (prev: Database) => Change) => {
       const change = produce(current.current);
+      changeSeq.current += 1;
       current.current = change.db;
       setDb(change.db);
       send(change.commands);
@@ -534,6 +636,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addCredential: (input) =>
         apply((prev) => {
           const created: Credential = { ...input, id: uid(), createdAt: nowIso(), updatedAt: nowIso() };
+          // The typed secret goes to the server once; local state only remembers that one exists.
+          const local: Credential = { ...created, secret: "", hasSecret: created.secret !== "" };
           const activity = logged(prev, {
             orgId: input.orgId,
             projectId: input.projectId,
@@ -541,18 +645,21 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             tone: "accent",
           });
           return {
-            db: { ...prev, credentials: [...prev.credentials, created], activity: activity.activity },
+            db: { ...prev, credentials: [...prev.credentials, local], activity: activity.activity },
             commands: [upsert("credentials", created as unknown as StoredRecord), activity.command],
           };
         }),
       updateCredential: (id, patch) =>
         apply((prev) => {
-          const { next, updated } = patchRecord(prev.credentials, id, { ...patch, updatedAt: nowIso() });
-          if (!updated) return { db: prev, commands: [] };
+          const previous = prev.credentials.find((c) => c.id === id);
+          if (!previous) return { db: prev, commands: [] };
+          // A blank secret means "keep the stored one": it is omitted so the server leaves it untouched.
+          const { local: updated, record } = credentialEdit(previous, patch, nowIso());
+          const next = prev.credentials.map((c) => (c.id === id ? updated : c));
           const activity = logged(prev, { orgId: updated.orgId, projectId: updated.projectId, text: `Credential updated: ${updated.name}`, tone: "line" });
           return {
             db: { ...prev, credentials: next, activity: activity.activity },
-            commands: [upsert("credentials", updated as unknown as StoredRecord), activity.command],
+            commands: [upsert("credentials", record), activity.command],
           };
         }),
       removeCredential: (id) =>

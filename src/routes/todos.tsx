@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { ConfirmModal, SelectInput, TextInput } from "@/components/forms";
-import { Empty, Panel, PanelHead, Pill, Stat } from "@/components/kit";
+import { Empty, ListSkeleton, Panel, PanelHead, Pill, Stat } from "@/components/kit";
 import { useOrgData, useStore } from "@/lib/store";
 import type { Priority, Task } from "@/lib/types";
 
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/todos")({
 });
 
 function Todos() {
-  const { org, orgId, addTask, updateTask, removeTask } = useStore();
+  const { org, orgId, addTask, updateTask, removeTask, hydrated } = useStore();
   const { tasks, projects, members } = useOrgData();
   const [view, setView] = useState<"open" | "done" | "all">("open");
   const [pendingDelete, setPendingDelete] = useState<Task | null>(null);
@@ -115,7 +115,7 @@ function Todos() {
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-lg px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors ${
+              className={`rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
                 view === v ? "bg-ink text-paper" : "border border-line bg-panel/70 text-ink-soft hover:bg-ink/5"
               }`}
             >
@@ -125,12 +125,17 @@ function Todos() {
         </div>
 
         <Panel className="mt-3 p-2">
-          {visible.length === 0 ? (
+          {!hydrated ? (
+            <div className="p-2">
+              <ListSkeleton />
+            </div>
+          ) : null}
+          {hydrated && visible.length === 0 ? (
             <div className="p-2">
               <Empty text="Nothing here" />
             </div>
           ) : null}
-          {visible.map((t) => {
+          {hydrated && visible.map((t) => {
             const project = projects.find((p) => p.id === t.projectId);
             const isOverdue = !t.done && t.dueDate && t.dueDate < todayStr;
             return (
@@ -143,14 +148,14 @@ function Todos() {
                 />
                 <span className={`truncate text-[13.5px] ${t.done ? "text-ink-soft line-through" : ""}`}>{t.title}</span>
                 {t.priority === "high" ? <Pill tone="rose">high</Pill> : null}
-                <span className="ml-auto hidden font-mono text-[10px] text-ink-soft sm:block">
+                <span className="ml-auto hidden font-mono text-[11px] text-ink-soft sm:block">
                   {project?.name ?? "No project"}
                 </span>
                 <select
                   aria-label={`Assignee for ${t.title}`}
                   value={t.assigneeId ?? ""}
                   onChange={(e) => updateTask(t.id, { assigneeId: e.target.value || null })}
-                  className="max-w-32 truncate bg-transparent font-mono text-[10px] text-ink-soft outline-none hover:text-ink"
+                  className="max-w-32 truncate bg-transparent font-mono text-[11px] text-ink-soft outline-none hover:text-ink"
                 >
                   <option value="">Unassigned</option>
                   {members.map((m) => (
@@ -159,10 +164,10 @@ function Todos() {
                     </option>
                   ))}
                 </select>
-                <span className={`w-24 text-right font-mono text-[10px] ${isOverdue ? "text-rose" : "text-ink-soft"}`}>
+                <span className={`w-24 text-right font-mono text-[11px] ${isOverdue ? "text-rose" : "text-ink-soft"}`}>
                   {t.dueDate || "—"}
                 </span>
-                <button onClick={() => setPendingDelete(t)} aria-label={`Delete ${t.title}`} className="font-mono text-[10px] text-ink-soft hover:text-rose">
+                <button onClick={() => setPendingDelete(t)} aria-label={`Delete ${t.title}`} className="font-mono text-[11px] text-ink-soft hover:text-rose">
                   ✕
                 </button>
               </div>

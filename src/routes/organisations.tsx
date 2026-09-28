@@ -3,8 +3,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
 import { CredentialsPanel } from "@/components/credentials-panel";
-import { Field, Modal, TextArea, TextInput } from "@/components/forms";
-import { Empty, Panel, PanelHead, formatDate } from "@/components/kit";
+import { ConfirmModal, Field, Modal, TextArea, TextInput } from "@/components/forms";
+import { Empty, Panel, formatDate } from "@/components/kit";
+import { countOrgCascade, describeCascade } from "@/lib/cascade-counts";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/organisations")({
@@ -26,6 +27,8 @@ function Organisations() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [credentialsOrgId, setCredentialsOrgId] = useState<string | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const deleteTarget = db.organisations.find((o) => o.id === deleteTargetId);
 
   const startCreate = () => {
     setEditing(null);
@@ -84,13 +87,13 @@ function Organisations() {
                     <div className="flex items-center gap-2">
                       <h3 className="truncate font-display text-[18px] font-medium">{o.name}</h3>
                       {isCurrent ? (
-                        <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[9.5px] text-accent ring-1 ring-accent/10">
+                        <span className="rounded-full bg-accent-soft px-2 py-0.5 font-mono text-[11px] text-accent ring-1 ring-accent/10">
                           current
                         </span>
                       ) : null}
                     </div>
                     <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{o.description || "No description yet."}</p>
-                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
+                    <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
                       <span>{projects.length} projects</span>
                       <span>{members.length} people</span>
                       <span>{credentials.length} credentials</span>
@@ -108,9 +111,7 @@ function Organisations() {
                         toast.error("Keep at least one organisation");
                         return;
                       }
-                      removeOrganisation(o.id);
-                      if (isCurrent) setOrgId(db.organisations.find((x) => x.id !== o.id)!.id);
-                      toast.success("Organisation removed");
+                      setDeleteTargetId(o.id);
                     }}
                   >
                     Delete
@@ -151,6 +152,25 @@ function Organisations() {
       >
         {credentialsOrgId ? <CredentialsPanel orgId={credentialsOrgId} projectId={null} /> : null}
       </Modal>
+
+      <ConfirmModal
+        open={deleteTarget !== undefined}
+        title="Delete organisation?"
+        description={
+          deleteTarget
+            ? `This permanently deletes "${deleteTarget.name}" and everything in it: ${db.projects.filter((p) => p.orgId === deleteTarget.id).length} projects, ${db.members.filter((m) => m.orgId === deleteTarget.id).length} people, ${describeCascade(countOrgCascade(db, deleteTarget.id))}. This can't be undone.`
+            : ""
+        }
+        confirmLabel="Delete organisation"
+        onClose={() => setDeleteTargetId(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          const isCurrent = deleteTarget.id === orgId;
+          removeOrganisation(deleteTarget.id);
+          if (isCurrent) setOrgId(db.organisations.find((x) => x.id !== deleteTarget.id)!.id);
+          toast.success("Organisation removed");
+        }}
+      />
     </>
   );
 }

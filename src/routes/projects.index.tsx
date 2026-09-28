@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
 import { Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
-import { Empty, Panel, Pill, Progress, formatDate } from "@/components/kit";
+import { Empty, ListSkeleton, Panel, Pill, Progress, formatDate } from "@/components/kit";
 import { projectProgress, useOrgData, useStore } from "@/lib/store";
 import { PROJECT_STATUS_LABEL, PROJECT_STATUS_TONE, type ProjectStatus } from "@/lib/types";
 
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/projects/")({
 const STATUSES: ProjectStatus[] = ["planning", "in_progress", "review", "blocked", "done"];
 
 function ProjectsIndex() {
-  const { org, orgId, addProject } = useStore();
+  const { org, orgId, addProject, hydrated } = useStore();
   const { projects, members, tasks } = useOrgData();
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | ProjectStatus>("all");
@@ -72,7 +72,7 @@ function ProjectsIndex() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`rounded-lg px-3 py-1.5 font-mono text-[10.5px] uppercase tracking-[0.12em] transition-colors ${
+              className={`rounded-lg px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] transition-colors ${
                 filter === s ? "bg-ink text-paper" : "border border-line bg-panel/70 text-ink-soft hover:bg-ink/5"
               }`}
             >
@@ -81,10 +81,17 @@ function ProjectsIndex() {
           ))}
         </div>
 
-        {visible.length === 0 ? <Empty text="No projects here yet" /> : null}
+        {!hydrated ? (
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <ListSkeleton rows={2} />
+            <ListSkeleton rows={2} />
+            <ListSkeleton rows={2} />
+          </div>
+        ) : null}
+        {hydrated && visible.length === 0 ? <Empty text="No projects here yet" /> : null}
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {visible.map((p) => {
+          {hydrated && visible.map((p) => {
             const owner = members.find((m) => m.id === p.ownerId);
             return (
               <Link key={p.id} to="/projects/$projectId" params={{ projectId: p.id }}>
@@ -99,11 +106,11 @@ function ProjectsIndex() {
                   <div className="mt-3">
                     <Progress value={projectProgress(tasks, p.id)} tone={PROJECT_STATUS_TONE[p.status]} />
                   </div>
-                  <div className="mt-3 flex items-center justify-between font-mono text-[10px] text-ink-soft">
+                  <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-ink-soft">
                     <span>{owner?.name ?? "Unassigned"}</span>
                     <span>{p.dueDate ? `due ${formatDate(p.dueDate)}` : "no due date"}</span>
                   </div>
-                  {p.links.length > 0 ? <div className="mt-2 font-mono text-[10px] text-accent">↗ {p.links.length} link{p.links.length === 1 ? "" : "s"}</div> : null}
+                  {p.links.length > 0 ? <div className="mt-2 font-mono text-[11px] text-accent">↗ {p.links.length} link{p.links.length === 1 ? "" : "s"}</div> : null}
                 </Panel>
               </Link>
             );
