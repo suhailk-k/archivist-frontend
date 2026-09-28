@@ -7,7 +7,7 @@ import { uid, useStore } from "@/lib/store";
 import type { ID, LabelColor, Member, Project, ProjectLabel, Task, TaskStatus } from "@/lib/types";
 import { BoardFiltersBar } from "./board-filters";
 import { BoardView } from "./board-view";
-import { TaskDetailSheet } from "./task-detail-sheet";
+import { TaskDetailDialog } from "./task-detail-dialog";
 
 const SKELETON_COLUMNS = 4;
 
@@ -88,7 +88,7 @@ export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, 
           ))}
         </div>
       )}
-      <TaskDetailSheet
+      <TaskDetailDialog
         task={openTask}
         project={openTask?.projectId ? projectsById.get(openTask.projectId) : undefined}
         members={members}

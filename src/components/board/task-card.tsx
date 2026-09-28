@@ -1,14 +1,14 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar } from "lucide-react";
+import { Calendar, SquareCheck } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { ID, Member, Priority, ProjectLabel, Task } from "@/lib/types";
-import { LABEL_DOT, PRIORITY_LABEL, STATUS_META, initials, shortDate } from "./status-meta";
+import { LABEL_BORDER, PRIORITY_LABEL, initials, shortDate } from "./status-meta";
 
-const MAX_AVATARS = 3;
-const MAX_LABEL_CHIPS = 2;
-const chip = "inline-flex h-6 items-center gap-1 rounded-md border border-line bg-panel px-1.5 text-[11px] leading-none text-ink-soft";
+const MAX_AVATARS = 2;
+const MAX_LABEL_CHIPS = 3;
+const labelChip = "inline-flex h-[22px] max-w-full items-center rounded-[4px] border bg-panel px-1.5 text-[12px] leading-none text-ink";
 
 export interface TaskCardProps {
   task: Task;
@@ -51,13 +51,12 @@ const suppressSpaceClick = (event: KeyboardEvent) => {
 };
 
 export function TaskCard({ task, taskKey, projectLabels, membersById, today, onOpen, ref, style, className, dragProps, isOverlay }: TaskCardViewProps) {
-  const status = STATUS_META[task.status];
-  const StatusIcon = status.icon;
   const labels = task.labels.flatMap((id) => projectLabels.filter((label) => label.id === id));
   const assignees = task.assigneeIds.flatMap((id) => {
     const member = membersById.get(id);
     return member ? [member] : [];
   });
+  const isClosed = task.status === "done" || task.status === "cancelled";
   return (
     <button
       type="button"
@@ -68,49 +67,67 @@ export function TaskCard({ task, taskKey, projectLabels, membersById, today, onO
       onClick={() => onOpen?.(task.id)}
       onKeyUp={suppressSpaceClick}
       className={cn(
-        "block w-full touch-manipulation select-none rounded-[10px] border border-line bg-panel p-3 text-left shadow-sm shadow-ink/5 outline-none transition-[border-color,box-shadow] hover:border-ink-soft/40 focus-visible:ring-2 focus-visible:ring-accent/40",
-        isOverlay && "cursor-grabbing shadow-xl shadow-ink/15 ring-1 ring-accent/20",
+        "block w-full touch-manipulation select-none rounded-lg border border-line bg-panel px-3 pb-2.5 pt-3 text-left shadow-[0_1px_1px_color-mix(in_oklab,var(--ink)_8%,transparent)] outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--panel)_94%,var(--ink))] focus-visible:ring-2 focus-visible:ring-accent/50",
+        isOverlay && "cursor-grabbing shadow-xl shadow-ink/15 ring-1 ring-accent/25",
         className,
       )}
     >
-      <div className="flex items-center gap-1.5 font-mono text-[11px] text-ink-soft">
-        <StatusIcon size={13} className={status.tone} aria-hidden="true" />
-        {taskKey ? <span>{taskKey}</span> : null}
-      </div>
-      <div className={cn("mt-1.5 line-clamp-2 text-[14px] leading-snug text-ink", task.status === "cancelled" && "text-ink-soft line-through")}>
+      <div className={cn("line-clamp-3 text-[14px] leading-[1.4] text-ink", task.status === "cancelled" && "text-ink-soft line-through")}>
         {task.title}
       </div>
-      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-        <Avatars members={assignees} />
-        <LabelChips labels={labels} />
-        {task.dueDate ? <DueChip date={task.dueDate} isOverdue={!task.done && task.dueDate < today} /> : null}
-        <PriorityChip priority={task.priority} />
+
+      {labels.length > 0 || task.dueDate ? (
+        <div className="mt-2 flex flex-wrap items-center gap-1">
+          <LabelChips labels={labels} />
+          {task.dueDate ? <DueChip date={task.dueDate} isOverdue={!isClosed && task.dueDate < today} /> : null}
+        </div>
+      ) : null}
+
+      <div className="mt-2.5 flex items-center gap-1.5">
+        <SquareCheck size={16} className="shrink-0 text-accent" aria-hidden="true" />
+        {taskKey ? (
+          <span className={cn("font-mono text-[12px] font-medium text-ink-soft", task.status === "done" && "line-through")}>{taskKey}</span>
+        ) : (
+          <span className="text-[12px] text-ink-soft">No project</span>
+        )}
+        <span className="ml-auto flex items-center gap-1.5">
+          <PriorityIcon priority={task.priority} />
+          <Avatars members={assignees} />
+        </span>
       </div>
     </button>
   );
 }
 
+export function Avatar({ member, size = "md" }: { member: Member; size?: "sm" | "md" }) {
+  return (
+    <span
+      title={member.name}
+      className={cn(
+        "grid shrink-0 place-items-center rounded-full bg-accent font-semibold leading-none text-paper ring-2 ring-panel",
+        size === "sm" ? "size-5 text-[11px]" : "size-6 text-[11px]",
+      )}
+    >
+      {initials(member.name)}
+    </span>
+  );
+}
+
 function Avatars({ members }: { members: Member[] }) {
-  if (members.length === 0) return null;
+  if (members.length === 0) {
+    return <span className="size-6 rounded-full border border-dashed border-ink-soft/50" title="Unassigned" aria-label="Unassigned" />;
+  }
   const shown = members.slice(0, MAX_AVATARS);
   const extra = members.length - shown.length;
   return (
-    <span className="flex items-center pr-0.5" title={members.map((m) => m.name).join(", ")}>
+    <span className="flex items-center" title={members.map((m) => m.name).join(", ")}>
       {shown.map((member, index) => (
-        <span
-          key={member.id}
-          className={cn(
-            "grid size-[22px] place-items-center rounded-full bg-accent-soft text-[11px] font-medium leading-none text-accent ring-2 ring-panel",
-            index > 0 && "-ml-1.5",
-          )}
-        >
-          {initials(member.name)}
+        <span key={member.id} className={cn(index > 0 && "-ml-1.5")}>
+          <Avatar member={member} />
         </span>
       ))}
       {extra > 0 ? (
-        <span className="-ml-1.5 grid size-[22px] place-items-center rounded-full bg-line text-[11px] leading-none text-ink ring-2 ring-panel">
-          +{extra}
-        </span>
+        <span className="-ml-1.5 grid size-6 place-items-center rounded-full bg-line text-[11px] font-medium leading-none text-ink ring-2 ring-panel">+{extra}</span>
       ) : null}
     </span>
   );
@@ -118,29 +135,30 @@ function Avatars({ members }: { members: Member[] }) {
 
 function LabelChips({ labels }: { labels: ProjectLabel[] }) {
   if (labels.length === 0) return null;
-  if (labels.length > MAX_LABEL_CHIPS) {
-    return (
-      <span className={chip} title={labels.map((label) => label.name).join(", ")}>
-        <span className="flex -space-x-0.5">
-          {labels.slice(0, 3).map((label) => (
-            <span key={label.id} className={cn("size-2 rounded-full ring-1 ring-panel", LABEL_DOT[label.color])} />
-          ))}
+  const shown = labels.slice(0, MAX_LABEL_CHIPS);
+  const extra = labels.length - shown.length;
+  return (
+    <>
+      {shown.map((label) => (
+        <span key={label.id} className={cn(labelChip, LABEL_BORDER[label.color])}>
+          <span className="truncate">{label.name}</span>
         </span>
-        {labels.length} labels
-      </span>
-    );
-  }
-  return labels.map((label) => (
-    <span key={label.id} className={chip}>
-      <span className={cn("size-2 rounded-full", LABEL_DOT[label.color])} />
-      <span className="max-w-24 truncate">{label.name}</span>
-    </span>
-  ));
+      ))}
+      {extra > 0 ? (
+        <span className={cn(labelChip, "border-line text-ink-soft")} title={labels.slice(MAX_LABEL_CHIPS).map((l) => l.name).join(", ")}>
+          +{extra}
+        </span>
+      ) : null}
+    </>
+  );
 }
 
 function DueChip({ date, isOverdue }: { date: string; isOverdue: boolean }) {
   return (
-    <span className={cn(chip, isOverdue && "border-rose/40 text-rose")} title={isOverdue ? "Overdue" : "Due date"}>
+    <span
+      className={cn(labelChip, "gap-1 border-line text-ink-soft", isOverdue && "border-rose/50 bg-rose/[0.06] text-rose")}
+      title={isOverdue ? "Overdue" : "Due date"}
+    >
       <Calendar size={12} aria-hidden="true" />
       {shortDate(date)}
     </span>
@@ -150,27 +168,23 @@ function DueChip({ date, isOverdue }: { date: string; isOverdue: boolean }) {
 const FILLED_BARS: Record<Exclude<Priority, "urgent">, number> = { none: 0, low: 1, normal: 2, high: 3 };
 const BAR_HEIGHTS = ["h-1", "h-[7px]", "h-2.5"];
 
-export function PriorityChip({ priority }: { priority: Priority }) {
+/** Signal bars for none…high; urgent is a red "!" square. */
+export function PriorityIcon({ priority }: { priority: Priority }) {
   const label = `Priority: ${PRIORITY_LABEL[priority]}`;
   if (priority === "urgent") {
     return (
-      <span className={cn(chip, "px-1")} title={label} aria-label={label}>
-        <span className="grid size-4 place-items-center rounded-[4px] border border-rose bg-rose/10 text-[11px] font-bold leading-none text-rose">!</span>
+      <span title={label} aria-label={label} className="grid size-4 place-items-center rounded-[3px] bg-rose text-[11px] font-bold leading-none text-paper">
+        !
       </span>
     );
   }
   const filled = FILLED_BARS[priority];
   const fill = priority === "high" ? "bg-amber" : "bg-ink-soft";
   return (
-    <span className={cn(chip, "px-1.5")} title={label} aria-label={label}>
-      <span className="flex h-2.5 items-end gap-[2px]">
-        {BAR_HEIGHTS.map((height, index) => (
-          <span
-            key={height}
-            className={cn("w-[3px] rounded-[1px]", height, index < filled ? fill : priority === "none" ? "border border-line" : "bg-line")}
-          />
-        ))}
-      </span>
+    <span title={label} aria-label={label} className="flex h-2.5 items-end gap-[2px] px-0.5">
+      {BAR_HEIGHTS.map((height, index) => (
+        <span key={height} className={cn("w-[3px] rounded-[1px]", height, index < filled ? fill : "bg-line")} />
+      ))}
     </span>
   );
 }

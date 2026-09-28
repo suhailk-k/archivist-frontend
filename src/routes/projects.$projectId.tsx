@@ -123,13 +123,16 @@ function ProjectDetail() {
       <div className="min-h-full bg-paper px-5 py-5 md:px-8 md:py-6">
         <ProjectHero project={project} progress={progress} owner={owner} assignedMembers={assignedMembers} tab={tab} onTabChange={setTab} />
 
-        <ProjectStatsGrid
-          openTasks={openTasks.length}
-          inProgress={inProgressTasks.length}
-          completed={completedTasks}
-          team={assignedMembers.length}
-          onTabChange={setTab}
-        />
+        {/* The board is its own overview of the work; keep it above the fold. */}
+        {tab === "Board" ? null : (
+          <ProjectStatsGrid
+            openTasks={openTasks.length}
+            inProgress={inProgressTasks.length}
+            completed={completedTasks}
+            team={assignedMembers.length}
+            onTabChange={setTab}
+          />
+        )}
 
         {tab === "Board" ? (
           <BoardTab

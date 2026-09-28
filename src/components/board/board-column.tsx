@@ -24,7 +24,6 @@ export interface BoardColumnProps {
 
 export function BoardColumn({ status, cards, membersById, today, isCollapsed, onToggleCollapsed, onHide, onOpen, onCreate }: BoardColumnProps) {
   const meta = STATUS_META[status];
-  const Icon = meta.icon;
   const { setNodeRef, isOver } = useDroppable({ id: columnDropId(status), data: { type: "column", status } });
   const [isComposing, setIsComposing] = useState(false);
 
@@ -36,8 +35,7 @@ export function BoardColumn({ status, cards, membersById, today, isCollapsed, on
         aria-label={`Expand ${meta.label} (${cards.length})`}
         className="flex w-11 shrink-0 snap-start flex-col items-center gap-2 rounded-xl bg-ink/[0.035] py-3 text-ink-soft hover:bg-ink/[0.06]"
       >
-        <Icon size={15} className={meta.tone} aria-hidden="true" />
-        <span className="font-mono text-[11px]">{cards.length}</span>
+        <span className="text-[12px]">{cards.length}</span>
         <span className="text-[12px] font-medium text-ink [writing-mode:vertical-rl]">{meta.label}</span>
       </button>
     );
@@ -46,13 +44,12 @@ export function BoardColumn({ status, cards, membersById, today, isCollapsed, on
   return (
     <section
       aria-label={`${meta.label}, ${cards.length} work items`}
-      className="flex max-h-full w-[min(320px,85vw)] shrink-0 snap-start flex-col rounded-xl bg-ink/[0.035]"
+      className="group/column flex max-h-full w-[min(288px,85vw)] shrink-0 snap-start flex-col rounded-xl bg-ink/[0.035]"
     >
-      <header className="sticky top-0 z-10 flex items-center gap-2 rounded-t-xl px-3 pb-2 pt-3">
-        <Icon size={15} className={meta.tone} aria-hidden="true" />
-        <h3 className="text-[13px] font-medium text-ink">{meta.label}</h3>
-        <span className="font-mono text-[11px] text-ink-soft">{cards.length}</span>
-        <div className="ml-auto flex items-center gap-0.5">
+      <header className="sticky top-0 z-10 flex h-11 items-center gap-2 rounded-t-xl px-3">
+        <h3 className="text-[12.5px] font-semibold text-ink-soft">{meta.label}</h3>
+        <span className="text-[12.5px] text-ink-soft">{cards.length}</span>
+        <div className="ml-auto flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover/column:opacity-100 max-md:opacity-100">
           <ColumnMenu label={meta.label} onCollapse={onToggleCollapsed} onHide={onHide} />
           {onCreate ? (
             <button
@@ -69,7 +66,7 @@ export function BoardColumn({ status, cards, membersById, today, isCollapsed, on
 
       <div
         ref={setNodeRef}
-        className={cn("min-h-24 flex-1 space-y-2 overflow-y-auto overscroll-contain px-2 pb-2 transition-colors", isOver && "bg-accent/[0.04]")}
+        className={cn("min-h-24 flex-1 space-y-1.5 overflow-y-auto overscroll-contain px-1.5 pb-1.5 transition-colors", isOver && "bg-accent/[0.05]")}
       >
         <SortableContext items={cards.map((card) => card.task.id)} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
@@ -77,12 +74,12 @@ export function BoardColumn({ status, cards, membersById, today, isCollapsed, on
           ))}
         </SortableContext>
         {cards.length === 0 && !isComposing ? (
-          <div className="rounded-[10px] border border-dashed border-line px-3 py-6 text-center text-[12px] text-ink-soft">No work items</div>
+          <div className="rounded-lg border border-dashed border-line px-3 py-6 text-center text-[12px] text-ink-soft">No work items</div>
         ) : null}
       </div>
 
       {onCreate ? (
-        <div className="px-2 pb-2">
+        <div className="px-1.5 pb-1.5">
           {isComposing ? (
             <NewItemInput
               onSubmit={(title) => onCreate(status, title)}
@@ -93,9 +90,9 @@ export function BoardColumn({ status, cards, membersById, today, isCollapsed, on
             <button
               type="button"
               onClick={() => setIsComposing(true)}
-              className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-[12.5px] text-ink-soft hover:bg-ink/5 hover:text-ink"
+              className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-[13px] font-medium text-ink-soft hover:bg-ink/[0.06] hover:text-ink"
             >
-              <Plus size={14} /> New work item
+              <Plus size={15} /> Create
             </button>
           )}
         </div>
@@ -126,7 +123,7 @@ function NewItemInput({ onSubmit, onClose, label }: { onSubmit: (title: string) 
       onChange={(event) => setTitle(event.target.value)}
       onKeyDown={onKeyDown}
       onBlur={() => !title.trim() && onClose()}
-      className="w-full rounded-[10px] border border-accent/50 bg-panel px-3 py-2.5 text-[13px] text-ink outline-none ring-2 ring-accent/15 placeholder:text-ink-soft/70"
+      className="w-full rounded-lg border border-accent/50 bg-panel px-3 py-2.5 text-[13px] text-ink outline-none ring-2 ring-accent/15 placeholder:text-ink-soft/70"
     />
   );
 }
