@@ -1,10 +1,8 @@
 import { apiGet, apiPost } from "./api-client";
+import type { AdminUser, UserAccess } from "./access-rules";
 import type { SessionUser } from "./auth";
 
-export interface UserAccess {
-  organisationIds: string[];
-  projectIds: string[];
-}
+export type { AdminUser, UserAccess } from "./access-rules";
 
 export interface CreateUserInput {
   username: string;
@@ -12,7 +10,7 @@ export interface CreateUserInput {
   password: string;
 }
 
-export const listUsers = () => apiGet<SessionUser[]>("/api/admin/users");
+export const listUsers = () => apiGet<AdminUser[]>("/api/admin/users");
 
 export const createUser = (input: CreateUserInput) => apiPost<SessionUser>("/api/admin/users", input);
 
