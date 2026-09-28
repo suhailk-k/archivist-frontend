@@ -13,6 +13,7 @@ import { useAuth } from "./auth";
 import { normalizeProjectLinks } from "./project-links";
 import type {
   Activity,
+  Credential,
   Database,
   Decision,
   Doc,
@@ -20,6 +21,7 @@ import type {
   Meeting,
   Member,
   Milestone,
+  NewTask,
   Organisation,
   Project,
   Task,
@@ -50,6 +52,8 @@ const EMPTY_DATABASE: Database = {
   docs: [],
   meetings: [],
   decisions: [],
+  credentials: [],
+  files: [],
   activity: [],
 };
 
@@ -78,7 +82,7 @@ interface StoreValue {
   updateProject: (id: ID, patch: Partial<Project>) => void;
   removeProject: (id: ID) => void;
 
-  addTask: (input: Omit<Task, "id" | "createdAt">) => void;
+  addTask: (input: NewTask) => void;
   updateTask: (id: ID, patch: Partial<Task>) => void;
   removeTask: (id: ID) => void;
 
@@ -97,6 +101,10 @@ interface StoreValue {
   addDecision: (input: Omit<Decision, "id">) => void;
   updateDecision: (id: ID, patch: Partial<Decision>) => void;
   removeDecision: (id: ID) => void;
+
+  addCredential: (input: Omit<Credential, "id" | "createdAt" | "updatedAt">) => void;
+  updateCredential: (id: ID, patch: Partial<Credential>) => void;
+  removeCredential: (id: ID) => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -118,6 +126,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const normalized: Database = {
       ...remote,
       projects: remote.projects.map((project) => ({ ...project, links: normalizeProjectLinks(project.links) })),
+      // Older task records predate daily planning.
+      tasks: remote.tasks.map((task) => ({ ...task, plannedFor: task.plannedFor ?? "", completedAt: task.completedAt ?? "" })),
+      // Older doc records predate file uploads and won't have these fields.
+      docs: remote.docs.map((doc) => ({
+        ...doc,
+        fileId: doc.fileId ?? null,
+        fileName: doc.fileName ?? "",
+        fileSize: doc.fileSize ?? 0,
+        fileMime: doc.fileMime ?? "",
+      })),
     };
     current.current = normalized;
     setDb(normalized);
@@ -344,7 +362,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       addTask: (input) =>
         apply((prev) => {
-          const created: Task = { ...input, id: uid(), createdAt: nowIso() };
+          const created: Task = { plannedFor: "", ...input, completedAt: "", id: uid(), createdAt: nowIso() };
           const activity = logged(prev, {
             orgId: input.orgId,
             projectId: input.projectId,
@@ -359,10 +377,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTask: (id, patch) =>
         apply((prev) => {
           const before = prev.tasks.find((t) => t.id === id);
-          const { next, updated } = patchRecord(prev.tasks, id, patch);
+          const isDoneChange = patch.done !== undefined && patch.done !== before?.done;
+          const fullPatch = isDoneChange ? { ...patch, completedAt: patch.done ? nowIso() : "" } : patch;
+          const { next, updated } = patchRecord(prev.tasks, id, fullPatch);
           if (!before || !updated) return { db: prev, commands: [] };
           const commands: Command[] = [upsert("tasks", updated as unknown as StoredRecord)];
-          if (patch.done !== undefined && patch.done !== before.done) {
+          if (isDoneChange) {
             const activity = logged(prev, {
               orgId: before.orgId,
               projectId: before.projectId,
@@ -431,7 +451,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           };
         }),
       removeDoc: (id) =>
-        apply((prev) => ({ db: { ...prev, docs: prev.docs.filter((d) => d.id !== id) }, commands: [drop("docs", id)] })),
+        apply((prev) => {
+          const removed = prev.docs.find((d) => d.id === id);
+          const commands: Command[] = [drop("docs", id)];
+          if (removed?.fileId) commands.push(drop("files", removed.fileId));
+          return { db: { ...prev, docs: prev.docs.filter((d) => d.id !== id) }, commands };
+        }),
 
       addMeeting: (input) =>
         apply((prev) => {
@@ -505,6 +530,42 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           db: { ...prev, decisions: prev.decisions.filter((d) => d.id !== id) },
           commands: [drop("decisions", id)],
         })),
+
+      addCredential: (input) =>
+        apply((prev) => {
+          const created: Credential = { ...input, id: uid(), createdAt: nowIso(), updatedAt: nowIso() };
+          const activity = logged(prev, {
+            orgId: input.orgId,
+            projectId: input.projectId,
+            text: `Credential added: ${created.name}`,
+            tone: "accent",
+          });
+          return {
+            db: { ...prev, credentials: [...prev.credentials, created], activity: activity.activity },
+            commands: [upsert("credentials", created as unknown as StoredRecord), activity.command],
+          };
+        }),
+      updateCredential: (id, patch) =>
+        apply((prev) => {
+          const { next, updated } = patchRecord(prev.credentials, id, { ...patch, updatedAt: nowIso() });
+          if (!updated) return { db: prev, commands: [] };
+          const activity = logged(prev, { orgId: updated.orgId, projectId: updated.projectId, text: `Credential updated: ${updated.name}`, tone: "line" });
+          return {
+            db: { ...prev, credentials: next, activity: activity.activity },
+            commands: [upsert("credentials", updated as unknown as StoredRecord), activity.command],
+          };
+        }),
+      removeCredential: (id) =>
+        apply((prev) => {
+          const removed = prev.credentials.find((c) => c.id === id);
+          const commands: Command[] = [drop("credentials", id)];
+          if (!removed) return { db: { ...prev, credentials: prev.credentials.filter((c) => c.id !== id) }, commands };
+          const activity = logged(prev, { orgId: removed.orgId, projectId: removed.projectId, text: `Credential removed: ${removed.name}`, tone: "rose" });
+          return {
+            db: { ...prev, credentials: prev.credentials.filter((c) => c.id !== id), activity: activity.activity },
+            commands: [...commands, activity.command],
+          };
+        }),
     };
   }, [db, hydrated, syncError, refresh, orgId, setOrgId, apply]);
 
@@ -527,6 +588,7 @@ export function useOrgData() {
       docs: db.docs.filter((d) => d.orgId === orgId),
       meetings: db.meetings.filter((m) => m.orgId === orgId),
       decisions: db.decisions.filter((d) => d.orgId === orgId),
+      credentials: db.credentials.filter((c) => c.orgId === orgId),
       activity: db.activity.filter((a) => a.orgId === orgId),
     }),
     [db, orgId],

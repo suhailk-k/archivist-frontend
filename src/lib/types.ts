@@ -49,8 +49,15 @@ export interface Task {
   priority: Priority;
   dueDate: string;
   assigneeId: ID | null;
+  /** Day the assignee plans to work on it (YYYY-MM-DD), separate from the dueDate deadline; "" = unscheduled. */
+  plannedFor: string;
+  /** ISO timestamp set when the task is checked off; "" while open. */
+  completedAt: string;
   createdAt: string;
 }
+
+/** Fields the store fills in itself when a task is created. */
+export type NewTask = Omit<Task, "id" | "createdAt" | "plannedFor" | "completedAt"> & Partial<Pick<Task, "plannedFor">>;
 
 export interface Milestone {
   id: ID;
@@ -67,6 +74,11 @@ export interface Doc {
   title: string;
   kind: string;
   link: string;
+  /** Set when a file was uploaded for this document (see /api/files); null for a link-only doc. */
+  fileId: ID | null;
+  fileName: string;
+  fileSize: number;
+  fileMime: string;
   ownerId: ID | null;
   notes: string;
   updatedAt: string;
@@ -94,6 +106,33 @@ export interface Decision {
   date: string;
 }
 
+export interface Credential {
+  id: ID;
+  orgId: ID;
+  projectId: ID | null;
+  name: string;
+  category: string;
+  username: string;
+  secret: string;
+  url: string;
+  usedFor: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Metadata for an uploaded file (see /api/files); the bytes live on the backend, not here. */
+export interface UploadedFile {
+  id: ID;
+  orgId: ID;
+  projectId: ID | null;
+  fileName: string;
+  mimeType: string;
+  size: number;
+  uploadedById: ID;
+  createdAt: string;
+}
+
 export interface Activity {
   id: ID;
   orgId: ID;
@@ -112,8 +151,20 @@ export interface Database {
   docs: Doc[];
   meetings: Meeting[];
   decisions: Decision[];
+  files: UploadedFile[];
+  credentials: Credential[];
   activity: Activity[];
 }
+
+export const CREDENTIAL_CATEGORY_SUGGESTIONS = [
+  "App Store Connect",
+  "Google Play Console",
+  "Firebase",
+  "AWS",
+  "GitHub",
+  "Domain / DNS",
+  "Email",
+] as const;
 
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   planning: "Planning",

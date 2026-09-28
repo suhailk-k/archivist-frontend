@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
+import { DocUploadField, type UploadedFileInfo } from "@/components/doc-upload-field";
 import { SelectInput, TextArea, TextInput } from "@/components/forms";
 import { Empty, Panel, PanelHead, relativeTime } from "@/components/kit";
+import { fileUrl } from "@/lib/api-client";
+import { DocDownloadButton } from "@/components/doc-download-button";
+import { EditDocModal } from "@/components/edit-doc-modal";
 import { useOrgData, useStore } from "@/lib/store";
+import type { Doc } from "@/lib/types";
 
 export const Route = createFileRoute("/documents")({
   head: () => ({
@@ -23,6 +29,8 @@ function Documents() {
   const { docs, projects, members } = useOrgData();
   const [query, setQuery] = useState("");
   const [form, setForm] = useState({ title: "", kind: "Spec", link: "", projectId: "", ownerId: "", notes: "" });
+  const [uploadedFile, setUploadedFile] = useState<UploadedFileInfo | null>(null);
+  const [editing, setEditing] = useState<Doc | null>(null);
 
   const visible = docs
     .filter((d) => d.title.toLowerCase().includes(query.toLowerCase()) || d.kind.toLowerCase().includes(query.toLowerCase()))
@@ -31,6 +39,7 @@ function Documents() {
   return (
     <>
       <PageHeader title="Documents" crumb={`${org?.name ?? ""} · ${docs.length} records`} />
+      <EditDocModal doc={editing} onClose={() => setEditing(null)} members={members} projects={projects} />
 
       <div className="px-6 py-7 md:px-8">
         <Panel>
@@ -58,6 +67,9 @@ function Documents() {
             <div />
           </div>
           <div className="px-4 pt-2">
+            <DocUploadField orgId={orgId} projectId={form.projectId || null} value={uploadedFile} onChange={setUploadedFile} />
+          </div>
+          <div className="px-4 pt-2">
             <TextArea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Notes" />
           </div>
           <div className="px-4 py-3">
@@ -73,10 +85,15 @@ function Documents() {
                   title: form.title.trim(),
                   kind: form.kind,
                   link: form.link,
+                  fileId: uploadedFile?.fileId ?? null,
+                  fileName: uploadedFile?.fileName ?? "",
+                  fileSize: uploadedFile?.fileSize ?? 0,
+                  fileMime: uploadedFile?.fileMime ?? "",
                   ownerId: form.ownerId || null,
                   notes: form.notes,
                 });
                 setForm({ title: "", kind: "Spec", link: "", projectId: "", ownerId: "", notes: "" });
+                setUploadedFile(null);
                 toast.success("Document added");
               }}
             >
@@ -115,6 +132,12 @@ function Documents() {
                     className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-medium outline-none focus:text-accent"
                   />
                   <span className="font-mono text-[9.5px] text-ink-soft">{d.kind}</span>
+                  {d.fileId ? (
+                    <a href={fileUrl(d.fileId)} target="_blank" rel="noreferrer" className="font-mono text-[9.5px] text-accent hover:underline">
+                      {d.fileName || "file"}
+                    </a>
+                  ) : null}
+                  <DocDownloadButton doc={d} />
                   {d.link ? (
                     <a href={d.link} target="_blank" rel="noreferrer" className="font-mono text-[9.5px] text-accent hover:underline">
                       open
@@ -131,6 +154,9 @@ function Documents() {
               </div>
               <div className="flex w-24 items-center justify-end gap-2 font-mono text-[10.5px] text-ink-soft">
                 {relativeTime(d.updatedAt)}
+                <button onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`} className="hover:text-accent">
+                  <Pencil size={12} />
+                </button>
                 <button onClick={() => removeDoc(d.id)} className="hover:text-rose">
                   ✕
                 </button>

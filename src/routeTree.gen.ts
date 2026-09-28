@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CredentialsRouteImport } from './routes/credentials'
 import { Route as DecisionsRouteImport } from './routes/decisions'
 import { Route as DocumentsRouteImport } from './routes/documents'
 import { Route as HistoryRouteImport } from './routes/history'
@@ -21,6 +22,7 @@ import { Route as OrganisationsRouteImport } from './routes/organisations'
 import { Route as PlanningRouteImport } from './routes/planning'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as TodayRouteImport } from './routes/today'
 import { Route as TodosRouteImport } from './routes/todos'
 import { Route as ProjectsIndexRouteImport } from './routes/projects.index'
 import { Route as ProjectsProjectIdRouteImport } from './routes/projects.$projectId'
@@ -33,6 +35,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CredentialsRoute = CredentialsRouteImport.update({
+  id: '/credentials',
+  path: '/credentials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DecisionsRoute = DecisionsRouteImport.update({
@@ -85,6 +92,11 @@ const SetupRoute = SetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TodayRoute = TodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TodosRoute = TodosRouteImport.update({
   id: '/todos',
   path: '/todos',
@@ -104,6 +116,7 @@ const ProjectsProjectIdRoute = ProjectsProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/credentials': typeof CredentialsRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
@@ -114,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/planning': typeof PlanningRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/setup': typeof SetupRoute
+  '/today': typeof TodayRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -121,6 +135,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/credentials': typeof CredentialsRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
@@ -130,6 +145,7 @@ export interface FileRoutesByTo {
   '/organisations': typeof OrganisationsRoute
   '/planning': typeof PlanningRoute
   '/setup': typeof SetupRoute
+  '/today': typeof TodayRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects': typeof ProjectsIndexRoute
@@ -138,6 +154,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/credentials': typeof CredentialsRoute
   '/decisions': typeof DecisionsRoute
   '/documents': typeof DocumentsRoute
   '/history': typeof HistoryRoute
@@ -148,6 +165,7 @@ export interface FileRoutesById {
   '/planning': typeof PlanningRoute
   '/projects': typeof ProjectsRouteWithChildren
   '/setup': typeof SetupRoute
+  '/today': typeof TodayRoute
   '/todos': typeof TodosRoute
   '/projects/$projectId': typeof ProjectsProjectIdRoute
   '/projects/': typeof ProjectsIndexRoute
@@ -157,6 +175,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/credentials'
     | '/decisions'
     | '/documents'
     | '/history'
@@ -167,6 +186,7 @@ export interface FileRouteTypes {
     | '/planning'
     | '/projects'
     | '/setup'
+    | '/today'
     | '/todos'
     | '/projects/$projectId'
     | '/projects/'
@@ -174,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/credentials'
     | '/decisions'
     | '/documents'
     | '/history'
@@ -183,6 +204,7 @@ export interface FileRouteTypes {
     | '/organisations'
     | '/planning'
     | '/setup'
+    | '/today'
     | '/todos'
     | '/projects/$projectId'
     | '/projects'
@@ -190,6 +212,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/credentials'
     | '/decisions'
     | '/documents'
     | '/history'
@@ -200,6 +223,7 @@ export interface FileRouteTypes {
     | '/planning'
     | '/projects'
     | '/setup'
+    | '/today'
     | '/todos'
     | '/projects/$projectId'
     | '/projects/'
@@ -208,6 +232,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  CredentialsRoute: typeof CredentialsRoute
   DecisionsRoute: typeof DecisionsRoute
   DocumentsRoute: typeof DocumentsRoute
   HistoryRoute: typeof HistoryRoute
@@ -218,6 +243,7 @@ export interface RootRouteChildren {
   PlanningRoute: typeof PlanningRoute
   ProjectsRoute: typeof ProjectsRouteWithChildren
   SetupRoute: typeof SetupRoute
+  TodayRoute: typeof TodayRoute
   TodosRoute: typeof TodosRoute
 }
 
@@ -235,6 +261,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credentials': {
+      id: '/credentials'
+      path: '/credentials'
+      fullPath: '/credentials'
+      preLoaderRoute: typeof CredentialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decisions': {
@@ -307,6 +340,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/today': {
+      id: '/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof TodayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/todos': {
       id: '/todos'
       path: '/todos'
@@ -348,6 +388,7 @@ const ProjectsRouteWithChildren = ProjectsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  CredentialsRoute: CredentialsRoute,
   DecisionsRoute: DecisionsRoute,
   DocumentsRoute: DocumentsRoute,
   HistoryRoute: HistoryRoute,
@@ -358,6 +399,7 @@ const rootRouteChildren: RootRouteChildren = {
   PlanningRoute: PlanningRoute,
   ProjectsRoute: ProjectsRouteWithChildren,
   SetupRoute: SetupRoute,
+  TodayRoute: TodayRoute,
   TodosRoute: TodosRoute,
 }
 export const routeTree = rootRouteImport

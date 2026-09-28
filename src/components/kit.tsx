@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { Check, Copy, Eye, EyeOff } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type Tone = "accent" | "verd" | "amber" | "rose" | "line";
@@ -152,4 +153,39 @@ export function formatDate(date: string) {
   const d = new Date(date + "T00:00:00");
   if (Number.isNaN(d.getTime())) return date;
   return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** A password/secret shown masked by default, with reveal and copy-to-clipboard controls. */
+export function SecretValue({ value }: { value: string }) {
+  const [revealed, setRevealed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  if (!value) return <span className="text-ink-soft/60">—</span>;
+
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span className="font-mono text-[12px] tracking-wide">{revealed ? value : "•".repeat(Math.min(value.length, 14))}</span>
+      <button
+        type="button"
+        onClick={() => setRevealed((v) => !v)}
+        aria-label={revealed ? "Hide secret" : "Reveal secret"}
+        className="text-ink-soft transition-colors hover:text-ink"
+      >
+        {revealed ? <EyeOff size={13} /> : <Eye size={13} />}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          void navigator.clipboard.writeText(value).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1200);
+          });
+        }}
+        aria-label="Copy secret"
+        className="text-ink-soft transition-colors hover:text-ink"
+      >
+        {copied ? <Check size={13} /> : <Copy size={13} />}
+      </button>
+    </span>
+  );
 }

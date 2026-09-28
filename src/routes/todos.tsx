@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
-import { SelectInput, TextInput } from "@/components/forms";
+import { ConfirmModal, SelectInput, TextInput } from "@/components/forms";
 import { Empty, Panel, PanelHead, Pill, Stat } from "@/components/kit";
 import { useOrgData, useStore } from "@/lib/store";
-import type { Priority } from "@/lib/types";
+import type { Priority, Task } from "@/lib/types";
 
 export const Route = createFileRoute("/todos")({
   head: () => ({
@@ -23,7 +23,9 @@ function Todos() {
   const { org, orgId, addTask, updateTask, removeTask } = useStore();
   const { tasks, projects, members } = useOrgData();
   const [view, setView] = useState<"open" | "done" | "all">("open");
-  const [form, setForm] = useState({ title: "", projectId: "", dueDate: "", priority: "normal" as Priority });
+  const [pendingDelete, setPendingDelete] = useState<Task | null>(null);
+  const emptyForm = { title: "", projectId: "", assigneeId: "", dueDate: "", priority: "normal" as Priority };
+  const [form, setForm] = useState(emptyForm);
 
   const visible = tasks
     .filter((t) => (view === "all" ? true : view === "open" ? !t.done : t.done))
@@ -45,15 +47,26 @@ function Todos() {
       done: false,
       priority: form.priority,
       dueDate: form.dueDate,
-      assigneeId: null,
+      assigneeId: form.assigneeId || null,
     });
-    setForm({ title: "", projectId: "", dueDate: "", priority: "normal" });
+    setForm(emptyForm);
     toast.success("Added to your list");
   };
 
   return (
     <>
       <PageHeader title="To-do" crumb={`${org?.name ?? ""} · Everything open`} />
+      <ConfirmModal
+        open={pendingDelete !== null}
+        title="Delete this to-do?"
+        description={`"${pendingDelete?.title ?? ""}" will be permanently deleted. This can't be undone.`}
+        onClose={() => setPendingDelete(null)}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          removeTask(pendingDelete.id);
+          toast.success("To-do deleted");
+        }}
+      />
 
       <div className="px-6 py-7 md:px-8">
         <div className="grid grid-cols-3 gap-3">
@@ -64,7 +77,7 @@ function Todos() {
 
         <Panel className="mt-3">
           <PanelHead index="a" title="Add a to-do" />
-          <div className="grid gap-2 px-4 pb-4 md:grid-cols-[1fr_auto_auto_auto_auto]">
+          <div className="grid gap-2 px-4 pb-4 md:grid-cols-[1fr_auto_auto_auto_auto_auto]">
             <TextInput
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -76,6 +89,14 @@ function Todos() {
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
+                </option>
+              ))}
+            </SelectInput>
+            <SelectInput value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })}>
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
                 </option>
               ))}
             </SelectInput>
@@ -111,7 +132,6 @@ function Todos() {
           ) : null}
           {visible.map((t) => {
             const project = projects.find((p) => p.id === t.projectId);
-            const assignee = members.find((m) => m.id === t.assigneeId);
             const isOverdue = !t.done && t.dueDate && t.dueDate < todayStr;
             return (
               <div key={t.id} className="flex items-center gap-3 rounded-lg px-2.5 py-2.5 hover:bg-ink/[0.035]">
@@ -126,11 +146,23 @@ function Todos() {
                 <span className="ml-auto hidden font-mono text-[10px] text-ink-soft sm:block">
                   {project?.name ?? "No project"}
                 </span>
-                {assignee ? <span className="font-mono text-[10px] text-ink-soft">{assignee.name}</span> : null}
+                <select
+                  aria-label={`Assignee for ${t.title}`}
+                  value={t.assigneeId ?? ""}
+                  onChange={(e) => updateTask(t.id, { assigneeId: e.target.value || null })}
+                  className="max-w-32 truncate bg-transparent font-mono text-[10px] text-ink-soft outline-none hover:text-ink"
+                >
+                  <option value="">Unassigned</option>
+                  {members.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name}
+                    </option>
+                  ))}
+                </select>
                 <span className={`w-24 text-right font-mono text-[10px] ${isOverdue ? "text-rose" : "text-ink-soft"}`}>
                   {t.dueDate || "—"}
                 </span>
-                <button onClick={() => removeTask(t.id)} className="font-mono text-[10px] text-ink-soft hover:text-rose">
+                <button onClick={() => setPendingDelete(t)} aria-label={`Delete ${t.title}`} className="font-mono text-[10px] text-ink-soft hover:text-rose">
                   ✕
                 </button>
               </div>

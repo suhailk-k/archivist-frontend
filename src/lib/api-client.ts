@@ -29,6 +29,39 @@ function defaultApiBaseUrl(): string {
 
 const API_BASE_URL = import.meta.env["VITE_API_URL"] ?? defaultApiBaseUrl();
 
+/** Same-site URL for viewing/downloading an uploaded file (see apiUpload). */
+export function fileUrl(fileId: string): string {
+  return `${API_BASE_URL}/api/files/${fileId}`;
+}
+
+/**
+ * Saves an uploaded file to the user's device under `fileName`. The backend serves files inline
+ * from another origin, where `<a download>` is ignored — so fetch the bytes with the session
+ * cookie and hand the browser a same-origin blob to save instead.
+ */
+export async function downloadFile(fileId: string, fileName: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(fileUrl(fileId), { credentials: "include" });
+  } catch {
+    throw new ApiRequestError(0, { code: "NETWORK_ERROR", message: "Archivist backend is unreachable." });
+  }
+  if (!response.ok) {
+    const body = (await response.json().catch(() => null)) as { error?: ApiError } | null;
+    if (response.status === 401) onUnauthorized?.();
+    throw new ApiRequestError(response.status, body?.error ?? { code: "DOWNLOAD_FAILED", message: "Could not download the file." });
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName || "download";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Revoke on the next tick so the browser has started the save.
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 type UnauthorizedHandler = () => void;
 
 let onUnauthorized: UnauthorizedHandler | null = null;
@@ -39,15 +72,15 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null): voi
 }
 
 export async function apiRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData bodies (file uploads) need the browser to set their own multipart boundary —
+  // forcing a JSON content-type here would make the backend fail to parse them.
+  const isFormData = init.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       ...init,
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...init.headers,
-      },
+      headers: isFormData ? (init.headers ?? {}) : { "Content-Type": "application/json", ...init.headers },
     });
   } catch {
     throw new ApiRequestError(0, { code: "NETWORK_ERROR", message: "Archivist backend is unreachable." });
@@ -76,4 +109,8 @@ export function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const init: RequestInit = { method: "POST" };
   if (body !== undefined) init.body = JSON.stringify(body);
   return apiRequest<T>(path, init);
+}
+
+export function apiUpload<T>(path: string, formData: FormData): Promise<T> {
+  return apiRequest<T>(path, { method: "POST", body: formData });
 }

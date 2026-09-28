@@ -171,7 +171,7 @@ function AuthGate() {
           <p className="mt-2 text-sm text-ink-soft">{backendError}</p>
           <p className="mt-4 text-sm text-ink-soft">
             Start it with <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-xs">npm run dev</code> in{" "}
-            <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-xs">archivist-src-backend</code>, then reload
+            <code className="rounded bg-panel px-1.5 py-0.5 font-mono text-xs">archivist-backend</code>, then reload
             this page.
           </p>
           <button

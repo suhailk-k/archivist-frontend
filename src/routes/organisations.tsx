@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { GhostButton, PageHeader, PrimaryButton } from "@/components/app-shell";
+import { CredentialsPanel } from "@/components/credentials-panel";
 import { Field, Modal, TextArea, TextInput } from "@/components/forms";
 import { Empty, Panel, PanelHead, formatDate } from "@/components/kit";
 import { useStore } from "@/lib/store";
@@ -24,6 +25,7 @@ function Organisations() {
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [credentialsOrgId, setCredentialsOrgId] = useState<string | null>(null);
 
   const startCreate = () => {
     setEditing(null);
@@ -70,6 +72,7 @@ function Organisations() {
           {db.organisations.map((o) => {
             const projects = db.projects.filter((p) => p.orgId === o.id);
             const members = db.members.filter((m) => m.orgId === o.id);
+            const credentials = db.credentials.filter((c) => c.orgId === o.id && c.projectId === null);
             const isCurrent = o.id === orgId;
             return (
               <Panel key={o.id} className="p-5">
@@ -90,6 +93,7 @@ function Organisations() {
                     <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-soft">
                       <span>{projects.length} projects</span>
                       <span>{members.length} people</span>
+                      <span>{credentials.length} credentials</span>
                       <span>since {formatDate(o.createdAt.slice(0, 10))}</span>
                     </div>
                   </div>
@@ -97,6 +101,7 @@ function Organisations() {
                 <div className="mt-4 flex flex-wrap gap-2">
                   {!isCurrent ? <GhostButton onClick={() => setOrgId(o.id)}>Switch to this</GhostButton> : null}
                   <GhostButton onClick={() => startEdit(o.id)}>Edit</GhostButton>
+                  <GhostButton onClick={() => setCredentialsOrgId(o.id)}>Credentials</GhostButton>
                   <GhostButton
                     onClick={() => {
                       if (db.organisations.length === 1) {
@@ -137,6 +142,14 @@ function Organisations() {
             <PrimaryButton onClick={save}>{editing ? "Save changes" : "Create"}</PrimaryButton>
           </div>
         </div>
+      </Modal>
+
+      <Modal
+        open={credentialsOrgId !== null}
+        title={`${db.organisations.find((o) => o.id === credentialsOrgId)?.name ?? ""} · Credentials`}
+        onClose={() => setCredentialsOrgId(null)}
+      >
+        {credentialsOrgId ? <CredentialsPanel orgId={credentialsOrgId} projectId={null} /> : null}
       </Modal>
     </>
   );

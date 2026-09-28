@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Archive ledger design system.
- * Paper surfaces, ink type, serif display, mono metadata.
+ * Elance-style workspace design system.
+ * Light paper surfaces, slate ink, indigo accent, dark sidebar chrome.
  */
 
 @theme inline {
@@ -69,16 +69,16 @@
 :root {
   --radius: 0.75rem;
 
-  --paper: oklch(0.135 0.025 264);
-  --panel: oklch(0.185 0.028 264);
-  --ink: oklch(0.94 0.018 258);
-  --ink-soft: oklch(0.67 0.035 258);
-  --line: oklch(0.29 0.035 264);
-  --accent: oklch(0.72 0.19 278);
-  --accent-soft: oklch(0.24 0.065 278);
-  --verd: oklch(0.74 0.15 163);
-  --amber: oklch(0.79 0.15 78);
-  --rose: oklch(0.72 0.17 20);
+  --paper: oklch(0.98 0.005 260);
+  --panel: oklch(1 0 0);
+  --ink: oklch(0.22 0.02 264);
+  --ink-soft: oklch(0.52 0.02 264);
+  --line: oklch(0.9 0.012 264);
+  --accent: oklch(0.53 0.23 276);
+  --accent-soft: oklch(0.94 0.035 276);
+  --verd: oklch(0.6 0.14 163);
+  --amber: oklch(0.62 0.15 78);
+  --rose: oklch(0.58 0.19 20);
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -87,10 +87,10 @@
   --popover: var(--panel);
   --popover-foreground: var(--ink);
   --primary: var(--accent);
-  --primary-foreground: oklch(0.13 0.02 264);
+  --primary-foreground: var(--paper);
   --secondary: var(--accent-soft);
   --secondary-foreground: var(--accent);
-  --muted: oklch(0.25 0.03 264);
+  --muted: oklch(0.96 0.006 264);
   --muted-foreground: var(--ink-soft);
   --accent-foreground: var(--paper);
   --destructive: var(--rose);
