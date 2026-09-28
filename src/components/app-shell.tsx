@@ -269,7 +269,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <HeaderActionsContext.Provider value={setHeaderActions}>
       <div className="min-h-screen bg-paper text-ink antialiased">
         <div className="flex min-h-screen">
-          <aside className="hidden w-[252px] shrink-0 flex-col bg-sidebar-chrome text-white md:flex">
+          <aside className="sticky top-0 hidden h-screen w-[252px] shrink-0 flex-col self-start bg-sidebar-chrome text-white md:flex">
             <SidebarContent />
           </aside>
 
