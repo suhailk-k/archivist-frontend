@@ -2,7 +2,9 @@ export type ID = string;
 
 export type ProjectStatus = "planning" | "in_progress" | "review" | "blocked" | "done";
 export type DecisionStatus = "open" | "approved" | "rejected";
-export type Priority = "low" | "normal" | "high";
+/** "normal" is shown as "Medium" on the board; kept for compatibility with older records. */
+export type Priority = "none" | "low" | "normal" | "high" | "urgent";
+export type TaskStatus = "backlog" | "todo" | "in_progress" | "in_review" | "done" | "cancelled";
 
 export interface Organisation {
   id: ID;
@@ -36,8 +38,20 @@ export interface Project {
   startDate: string;
   dueDate: string;
   links: ProjectLink[];
+  /** 2–5 uppercase letters used in task keys (e.g. ELC-23); derived in memory for older projects. */
+  key: string;
+  labels: ProjectLabel[];
   createdAt: string;
 }
+
+export interface ProjectLabel {
+  id: ID;
+  name: string;
+  color: LabelColor;
+}
+
+/** Preset label colours; each maps to a design token (or a mix of two) in board/status-meta.ts. */
+export type LabelColor = "accent" | "verd" | "amber" | "rose" | "ink" | "ink-soft" | "plum" | "teal";
 
 export interface Task {
   id: ID;
@@ -45,19 +59,38 @@ export interface Task {
   projectId: ID | null;
   title: string;
   phase: string;
+  /** Board column; `done` is derived from it (status === "done"). */
+  status: TaskStatus;
+  /** Per-project sequence assigned by the server; absent until the first save round-trips. */
+  number?: number;
+  /** Ids of the project's labels. */
+  labels: ID[];
+  /** Fractional order within a status column. */
+  sortOrder: number;
   done: boolean;
   priority: Priority;
   dueDate: string;
+  /** Kept equal to assigneeIds[0] for the planner and older code. */
   assigneeId: ID | null;
+  assigneeIds: ID[];
   /** Day the assignee plans to work on it (YYYY-MM-DD), separate from the dueDate deadline; "" = unscheduled. */
   plannedFor: string;
+  /** Free-form details edited in the board's task sheet; older records have none. */
+  notes?: string;
   /** ISO timestamp set when the task is checked off; "" while open. */
   completedAt: string;
   createdAt: string;
 }
 
 /** Fields the store fills in itself when a task is created. */
-export type NewTask = Omit<Task, "id" | "createdAt" | "plannedFor" | "completedAt"> & Partial<Pick<Task, "plannedFor">>;
+export type NewTask = Omit<
+  Task,
+  "id" | "createdAt" | "plannedFor" | "completedAt" | "status" | "number" | "labels" | "assigneeIds" | "sortOrder"
+> &
+  Partial<Pick<Task, "plannedFor" | "status" | "labels" | "assigneeIds">>;
+
+/** Fields the store fills in itself when a project is created. */
+export type NewProject = Omit<Project, "id" | "createdAt" | "key" | "labels"> & Partial<Pick<Project, "key" | "labels">>;
 
 export interface Milestone {
   id: ID;

@@ -6,6 +6,7 @@ import { useHeaderActions } from "@/components/app-shell";
 import { CredentialsPanel } from "@/components/credentials-panel";
 import { ConfirmModal } from "@/components/forms";
 import { Empty } from "@/components/kit";
+import { BoardTab } from "@/components/project/board-tab";
 import { DecisionsTab } from "@/components/project/decisions-tab";
 import { EditLinksModal } from "@/components/project/edit-links-modal";
 import { EditProjectModal } from "@/components/project/edit-project-modal";
@@ -19,17 +20,25 @@ import { ProjectStatsGrid } from "@/components/project/project-stats";
 import { TABS, type Tab } from "@/components/project/constants";
 import { TeamTab } from "@/components/project/team-tab";
 import { ProjectDocs } from "@/components/project-docs";
+import { filtersFromSearch, type BoardFilters } from "@/lib/board";
 import { countProjectCascade, describeCascade } from "@/lib/cascade-counts";
 import { projectProgress, useStore } from "@/lib/store";
 
-interface ProjectSearch {
+interface ProjectSearch extends BoardFilters {
   tab?: Tab | undefined;
+  /** Work item open in the detail sheet. */
+  task?: string;
 }
 
 export const Route = createFileRoute("/projects/$projectId")({
   validateSearch: (search: Record<string, unknown>): ProjectSearch => {
     const tab = search["tab"];
-    return { tab: TABS.find((t) => t === tab && t !== "Overview") };
+    const task = search["task"];
+    return {
+      tab: TABS.find((t) => t === tab && t !== "Overview"),
+      ...filtersFromSearch(search),
+      ...(typeof task === "string" && task ? { task } : {}),
+    };
   },
   head: () => ({
     meta: [
@@ -42,9 +51,6 @@ export const Route = createFileRoute("/projects/$projectId")({
   component: ProjectDetail,
 });
 
-// Phases that haven't been picked up yet read as "not started"; anything else (and not done) counts as in-progress.
-const NOT_STARTED_PHASES = new Set(["", "to do", "todo", "backlog", "unsorted"]);
-
 function ProjectDetail() {
   const { projectId } = useParams({ from: "/projects/$projectId" });
   const store = useStore();
@@ -53,6 +59,10 @@ function ProjectDetail() {
   const navigate = useNavigate({ from: "/projects/$projectId" });
   const tab: Tab = search.tab ?? "Overview";
   const setTab = (next: Tab) => void navigate({ search: (prev) => ({ ...prev, tab: next === "Overview" ? undefined : next }) });
+  const setFilters = (filters: BoardFilters) =>
+    void navigate({ search: (prev) => ({ tab: prev.tab, ...(prev.task ? { task: prev.task } : {}), ...filters }), replace: true });
+  const setOpenTask = (id: string | undefined) =>
+    void navigate({ search: (prev) => { const { task: _open, ...rest } = prev; return id ? { ...rest, task: id } : rest; } });
 
   const [editOpen, setEditOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
@@ -104,7 +114,7 @@ function ProjectDetail() {
 
   const openTasks = tasks.filter((task) => !task.done);
   const completedTasks = tasks.filter((task) => task.done).length;
-  const inProgressTasks = openTasks.filter((task) => !NOT_STARTED_PHASES.has((task.phase || "").trim().toLowerCase()));
+  const inProgressTasks = openTasks.filter((task) => task.status === "in_progress" || task.status === "in_review");
 
   const cascadeCounts = countProjectCascade(db, project.id);
 
@@ -120,6 +130,19 @@ function ProjectDetail() {
           team={assignedMembers.length}
           onTabChange={setTab}
         />
+
+        {tab === "Board" ? (
+          <BoardTab
+            project={project}
+            projects={db.projects.filter((p) => p.orgId === project.orgId)}
+            tasks={tasks}
+            members={members}
+            filters={filtersFromSearch(search)}
+            onFiltersChange={setFilters}
+            openTaskId={search.task}
+            onOpenTask={setOpenTask}
+          />
+        ) : null}
 
         {tab === "Overview" ? (
           <OverviewTab

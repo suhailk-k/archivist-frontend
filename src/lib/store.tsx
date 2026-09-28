@@ -11,6 +11,7 @@ import {
 import { toast } from "sonner";
 import { ApiRequestError, apiGet, apiPost } from "./api-client";
 import { useAuth } from "./auth";
+import { applyTaskPatch, buildTask, deriveProjectKey, moveTasks, normalizeProjects, normalizeTasks, type MoveRequest } from "./board";
 import { normalizeProjectLinks } from "./project-links";
 import { collectVersions, credentialEdit, stampVersion, versionKey, type Command, type RecordEntity, type StoredRecord } from "./sync";
 import type {
@@ -23,6 +24,7 @@ import type {
   Meeting,
   Member,
   Milestone,
+  NewProject,
   NewTask,
   Organisation,
   Project,
@@ -42,6 +44,8 @@ interface AppliedRecord {
   id: ID;
   /** Null after a delete. */
   version: number | null;
+  /** Tasks only: the per-project number the server assigned or kept. */
+  number?: number;
 }
 
 interface Change {
@@ -84,12 +88,14 @@ interface StoreValue {
   updateMember: (id: ID, patch: Partial<Member>) => void;
   removeMember: (id: ID) => void;
 
-  addProject: (input: Omit<Project, "id" | "createdAt">) => Project;
+  addProject: (input: NewProject) => Project;
   updateProject: (id: ID, patch: Partial<Project>) => void;
   removeProject: (id: ID) => void;
 
   addTask: (input: NewTask) => void;
   updateTask: (id: ID, patch: Partial<Task>) => void;
+  /** Drops a card into a column; `beforeId`/`afterId` are its new neighbours above/below. */
+  moveTask: (id: ID, request: MoveRequest) => void;
   removeTask: (id: ID) => void;
 
   addMilestone: (input: Omit<Milestone, "id">) => void;
@@ -144,9 +150,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     versions.current = collectVersions(remote);
     const normalized: Database = {
       ...remote,
-      projects: remote.projects.map((project) => ({ ...project, links: normalizeProjectLinks(project.links) })),
-      // Older task records predate daily planning.
-      tasks: remote.tasks.map((task) => ({ ...task, plannedFor: task.plannedFor ?? "", completedAt: task.completedAt ?? "" })),
+      // Older projects lack a key and labels; they're derived here and saved with the next project edit.
+      projects: normalizeProjects(remote.projects.map((project) => ({ ...project, links: normalizeProjectLinks(project.links) }))),
+      // Older task records predate daily planning and the board; see normalizeTasks for why nothing is saved here.
+      tasks: normalizeTasks(remote.tasks.map((task) => ({ ...task, plannedFor: task.plannedFor ?? "", completedAt: task.completedAt ?? "" }))),
       // Older doc records predate file uploads and won't have these fields.
       docs: remote.docs.map((doc) => ({
         ...doc,
@@ -230,6 +237,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [user, refreshIfIdle]);
 
+  /** New tasks get their number from the server; show it without treating it as a local edit. */
+  const applyTaskNumbers = useCallback((records: AppliedRecord[]) => {
+    const numbers = new Map(records.flatMap((entry) => (entry.entity === "tasks" && entry.number !== undefined ? [[entry.id, entry.number] as const] : [])));
+    if (numbers.size === 0) return;
+    const tasks = current.current.tasks.map((task) => {
+      const number = numbers.get(task.id);
+      return number === undefined || number === task.number ? task : { ...task, number };
+    });
+    if (tasks.every((task, index) => task === current.current.tasks[index])) return;
+    current.current = { ...current.current, tasks };
+    setDb(current.current);
+  }, []);
+
   const transmit = useCallback(
     async (commands: Command[]) => {
       const result = await apiPost<{ records: AppliedRecord[] }>("/api/data/commands", { commands: commands.map((command) => stampVersion(command, versions.current)) });
@@ -238,8 +258,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         if (entry.version === null) versions.current.delete(key);
         else versions.current.set(key, entry.version);
       }
+      applyTaskNumbers(result.records);
     },
-    [],
+    [applyTaskNumbers],
   );
 
   const handleSaveError = useCallback(
@@ -324,6 +345,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const next = list.map((item) => (item.id === id ? { ...item, ...patch } : item));
       const updated = next.find((item) => item.id === id);
       return { next, updated };
+    };
+
+    /** Upserts changed tasks, logging when `subject` was completed or reopened. */
+    const saveTasks = (prev: Database, subject: Task, changed: Task[]): Change => {
+      if (changed.length === 0) return { db: prev, commands: [] };
+      const byId = new Map(changed.map((task) => [task.id, task]));
+      const tasks = prev.tasks.map((task) => byId.get(task.id) ?? task);
+      const commands = changed.map((task) => upsert("tasks", task as unknown as StoredRecord));
+      const after = byId.get(subject.id);
+      if (!after || after.done === subject.done) return { db: { ...prev, tasks }, commands };
+      const activity = logged(prev, {
+        orgId: subject.orgId,
+        projectId: subject.projectId,
+        text: `${after.done ? "Completed" : "Reopened"}: ${subject.title}`,
+        tone: after.done ? "verd" : "amber",
+      });
+      return { db: { ...prev, tasks, activity: activity.activity }, commands: [...commands, activity.command] };
     };
 
     const cascadeDelete = (prev: Database, keep: (entity: RecordEntity, record: { id: ID }) => boolean) => {
@@ -423,7 +461,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
 
       addProject: (input) => {
-        const created: Project = { ...input, id: uid(), createdAt: nowIso() };
+        const taken = current.current.projects.filter((p) => p.orgId === input.orgId).map((p) => p.key);
+        const created: Project = { ...input, key: input.key ?? deriveProjectKey(input.name, taken), labels: input.labels ?? [], id: uid(), createdAt: nowIso() };
         apply((prev) => {
           const activity = logged(prev, {
             orgId: created.orgId,
@@ -464,7 +503,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       addTask: (input) =>
         apply((prev) => {
-          const created: Task = { plannedFor: "", ...input, completedAt: "", id: uid(), createdAt: nowIso() };
+          const created = buildTask(input, prev.tasks, uid(), nowIso());
           const activity = logged(prev, {
             orgId: input.orgId,
             projectId: input.projectId,
@@ -479,22 +518,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       updateTask: (id, patch) =>
         apply((prev) => {
           const before = prev.tasks.find((t) => t.id === id);
-          const isDoneChange = patch.done !== undefined && patch.done !== before?.done;
-          const fullPatch = isDoneChange ? { ...patch, completedAt: patch.done ? nowIso() : "" } : patch;
-          const { next, updated } = patchRecord(prev.tasks, id, fullPatch);
-          if (!before || !updated) return { db: prev, commands: [] };
-          const commands: Command[] = [upsert("tasks", updated as unknown as StoredRecord)];
-          if (isDoneChange) {
-            const activity = logged(prev, {
-              orgId: before.orgId,
-              projectId: before.projectId,
-              text: `${patch.done ? "Completed" : "Reopened"}: ${before.title}`,
-              tone: patch.done ? "verd" : "amber",
-            });
-            commands.push(activity.command);
-            return { db: { ...prev, tasks: next, activity: activity.activity }, commands };
-          }
-          return { db: { ...prev, tasks: next }, commands };
+          if (!before) return { db: prev, commands: [] };
+          return saveTasks(prev, before, [applyTaskPatch(before, patch, nowIso())]);
+        }),
+      moveTask: (id, request) =>
+        apply((prev) => {
+          const before = prev.tasks.find((t) => t.id === id);
+          if (!before) return { db: prev, commands: [] };
+          return saveTasks(prev, before, moveTasks(prev.tasks, id, request, nowIso()));
         }),
       removeTask: (id) =>
         apply((prev) => ({ db: { ...prev, tasks: prev.tasks.filter((t) => t.id !== id) }, commands: [drop("tasks", id)] })),

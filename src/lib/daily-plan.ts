@@ -26,7 +26,7 @@ export interface MemberDaySummary {
   done: number;
 }
 
-const PRIORITY_RANK: Record<Priority, number> = { high: 0, normal: 1, low: 2 };
+const PRIORITY_RANK: Record<Priority, number> = { urgent: 0, high: 1, normal: 2, low: 3, none: 4 };
 const NO_DATE = "9999-12-31";
 
 const pad = (value: number) => String(value).padStart(2, "0");

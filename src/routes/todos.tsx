@@ -1,13 +1,33 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { LayoutGrid, List } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
+import { TaskBoard } from "@/components/board/task-board";
 import { ConfirmModal, SelectInput, TextInput } from "@/components/forms";
 import { Empty, ListSkeleton, Panel, PanelHead, Pill, Stat } from "@/components/kit";
+import { filtersFromSearch, type BoardFilters } from "@/lib/board";
 import { useOrgData, useStore } from "@/lib/store";
 import type { Priority, Task } from "@/lib/types";
 
+type TasksView = "board" | "list";
+
+interface TasksSearch extends BoardFilters {
+  /** Omitted for the default, the board. */
+  view?: "list";
+  /** Work item open in the detail sheet. */
+  task?: string;
+}
+
 export const Route = createFileRoute("/todos")({
+  validateSearch: (search: Record<string, unknown>): TasksSearch => {
+    const task = search["task"];
+    return {
+      ...(search["view"] === "list" ? { view: "list" as const } : {}),
+      ...filtersFromSearch(search),
+      ...(typeof task === "string" && task ? { task } : {}),
+    };
+  },
   head: () => ({
     meta: [
       { title: "To-do — Archivist" },
@@ -20,7 +40,66 @@ export const Route = createFileRoute("/todos")({
 });
 
 function Todos() {
-  const { org, orgId, addTask, updateTask, removeTask, hydrated } = useStore();
+  const { org, orgId } = useStore();
+  const { tasks, projects, members } = useOrgData();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/todos" });
+  const view: TasksView = search.view ?? "board";
+  const setView = (next: TasksView) => void navigate({ search: next === "list" ? { view: "list" } : {} });
+  const setFilters = (filters: BoardFilters) =>
+    void navigate({ search: (prev) => ({ ...(prev.task ? { task: prev.task } : {}), ...filters }), replace: true });
+  const setOpenTask = (id: string | undefined) =>
+    void navigate({ search: (prev) => { const { task: _open, ...rest } = prev; return id ? { ...rest, task: id } : rest; } });
+
+  return (
+    <>
+      <PageHeader title="To-do" crumb={`${org?.name ?? ""} · Everything open`} action={<ViewToggle view={view} onChange={setView} />} />
+      {view === "board" ? (
+        <div className="px-4 py-5 md:px-8">
+          <TaskBoard
+            tasks={tasks}
+            projects={projects}
+            members={members}
+            filters={filtersFromSearch(search)}
+            onFiltersChange={setFilters}
+            openTaskId={search.task}
+            onOpenTask={setOpenTask}
+            createIn={{ orgId, projectId: null }}
+          />
+        </div>
+      ) : (
+        <TodoList />
+      )}
+    </>
+  );
+}
+
+function ViewToggle({ view, onChange }: { view: TasksView; onChange: (next: TasksView) => void }) {
+  const options = [
+    { value: "board", label: "Board", icon: LayoutGrid },
+    { value: "list", label: "List", icon: List },
+  ] as const;
+  return (
+    <div role="group" aria-label="View" className="flex rounded-lg border border-line bg-panel p-0.5">
+      {options.map(({ value, label, icon: Icon }) => (
+        <button
+          key={value}
+          type="button"
+          aria-pressed={view === value}
+          onClick={() => onChange(value)}
+          className={`inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-[12px] font-medium transition-colors ${
+            view === value ? "bg-ink text-paper" : "text-ink-soft hover:text-ink"
+          }`}
+        >
+          <Icon size={14} /> {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function TodoList() {
+  const { orgId, addTask, updateTask, removeTask, hydrated } = useStore();
   const { tasks, projects, members } = useOrgData();
   const [view, setView] = useState<"open" | "done" | "all">("open");
   const [pendingDelete, setPendingDelete] = useState<Task | null>(null);
@@ -55,7 +134,6 @@ function Todos() {
 
   return (
     <>
-      <PageHeader title="To-do" crumb={`${org?.name ?? ""} · Everything open`} />
       <ConfirmModal
         open={pendingDelete !== null}
         title="Delete this to-do?"
