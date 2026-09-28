@@ -14,6 +14,7 @@ import {
   normalizeProjects,
   normalizeTasks,
   planMove,
+  searchFromFilters,
   statusPatch,
   syncAssignees,
   taskKey,
@@ -175,9 +176,10 @@ test("normalizeProjects derives unique keys per org in createdAt order", () => {
 test("matchesFilters combines assignee, label, priority and text", () => {
   const t = task({ id: "t1", title: "Design empty states", assigneeIds: ["m1"], labels: ["l1"], priority: "high" });
   assert.equal(matchesFilters(t, {}, { key: "ELC", memberId: null }), true);
-  assert.equal(matchesFilters(t, { assignee: "me" }, { key: "ELC", memberId: "m1" }), true);
-  assert.equal(matchesFilters(t, { assignee: "me" }, { key: "ELC", memberId: null }), false);
-  assert.equal(matchesFilters(t, { assignee: "m2" }, { key: "ELC", memberId: null }), false);
+  assert.equal(matchesFilters(t, { assignees: ["me"] }, { key: "ELC", memberId: "m1" }), true);
+  assert.equal(matchesFilters(t, { assignees: ["me"] }, { key: "ELC", memberId: null }), false);
+  assert.equal(matchesFilters(t, { assignees: ["m2"] }, { key: "ELC", memberId: null }), false);
+  assert.equal(matchesFilters(t, { assignees: ["m2", "m1"] }, { key: "ELC", memberId: null }), true);
   assert.equal(matchesFilters(t, { label: "l1", priority: "high" }, { key: "ELC", memberId: null }), true);
   assert.equal(matchesFilters(t, { priority: "low" }, { key: "ELC", memberId: null }), false);
   assert.equal(matchesFilters(t, { q: "EMPTY" }, { key: "ELC", memberId: null }), true);
@@ -186,7 +188,9 @@ test("matchesFilters combines assignee, label, priority and text", () => {
 });
 
 test("filtersFromSearch keeps only well-formed values", () => {
-  assert.deepEqual(filtersFromSearch({ assignee: "me", priority: "bogus", q: "  hi ", label: 3 }), { assignee: "me", q: "hi" });
+  assert.deepEqual(filtersFromSearch({ assignee: "me", priority: "bogus", q: "  hi ", label: 3 }), { assignees: ["me"], q: "hi" });
+  assert.deepEqual(filtersFromSearch({ assignee: ["m1", "", 4, "m2"] }), { assignees: ["m1", "m2"] });
+  assert.deepEqual(filtersFromSearch({ assignee: [] }), {});
 });
 
 test("buildTask appends to its column and syncs status, done and assignees", () => {
@@ -233,4 +237,29 @@ test("moveTasks changes status and order and returns only changed tasks", () => 
   assert.equal(changed[0]?.done, true);
   assert.equal(changed[0]?.sortOrder, 150);
   assert.deepEqual(moveTasks(tasks, "a", { status: "done", afterId: "b" }, NOW), []);
+});
+
+test("matchesFilters keeps only tasks in the chosen projects", () => {
+  const t = task({ projectId: "p1" });
+  assert.equal(matchesFilters(t, { projects: ["p2", "p1"] }, { key: "ELC", memberId: null }), true);
+  assert.equal(matchesFilters(t, { projects: ["p2"] }, { key: "ELC", memberId: null }), false);
+  assert.equal(matchesFilters(task({ projectId: null }), { projects: ["p1"] }, { key: "", memberId: null }), false);
+});
+
+test("filters round-trip through URL search params", () => {
+  const filters = { assignees: ["me", "m2"], projects: ["p1"], label: "l1", priority: "high" as const, q: "hi" };
+  const search = searchFromFilters(filters);
+  assert.deepEqual(search, { assignee: ["me", "m2"], project: ["p1"], label: "l1", priority: "high", q: "hi" });
+  assert.deepEqual(filtersFromSearch(search as unknown as Record<string, unknown>), filters);
+  assert.deepEqual(searchFromFilters({}), {});
+});
+
+test("applyTaskPatch moving projects drops the old number and labels", () => {
+  const moved = applyTaskPatch(task({ projectId: "p1", number: 4, labels: ["l1"] }), { projectId: "p2" }, NOW);
+  assert.equal(moved.projectId, "p2");
+  assert.equal("number" in moved, false);
+  assert.deepEqual(moved.labels, []);
+  const same = applyTaskPatch(task({ projectId: "p1", number: 4, labels: ["l1"] }), { projectId: "p1", title: "x" }, NOW);
+  assert.equal(same.number, 4);
+  assert.deepEqual(same.labels, ["l1"]);
 });

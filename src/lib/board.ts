@@ -200,8 +200,10 @@ export function normalizeProjects(projects: readonly Project[]): Project[] {
 }
 
 export interface BoardFilters {
-  /** A member id, or "me" for the signed-in user's member record. */
-  assignee?: string;
+  /** Member ids, or "me" for the signed-in user's member record; a task matches if it has any of them. */
+  assignees?: string[];
+  /** Only tasks in these projects (the org-wide Tasks board). */
+  projects?: ID[];
   label?: ID;
   priority?: Priority;
   q?: string;
@@ -214,10 +216,11 @@ export interface FilterContext {
 }
 
 export function matchesFilters(task: Task, filters: BoardFilters, context: FilterContext): boolean {
-  if (filters.assignee) {
-    const wanted = filters.assignee === "me" ? context.memberId : filters.assignee;
-    if (!wanted || !task.assigneeIds.includes(wanted)) return false;
+  if (filters.assignees && filters.assignees.length > 0) {
+    const wanted = filters.assignees.map((id) => (id === "me" ? context.memberId : id));
+    if (!wanted.some((id) => id !== null && task.assigneeIds.includes(id))) return false;
   }
+  if (filters.projects && filters.projects.length > 0 && !(task.projectId && filters.projects.includes(task.projectId))) return false;
   if (filters.label && !task.labels.includes(filters.label)) return false;
   if (filters.priority && task.priority !== filters.priority) return false;
   if (filters.q) {
@@ -231,17 +234,44 @@ export function matchesFilters(task: Task, filters: BoardFilters, context: Filte
 const nonEmpty = (value: unknown): string | undefined =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
 
+/** One value arrives as a string, several as an array. */
+function listParam(value: unknown): string[] {
+  const values: unknown[] = Array.isArray(value) ? value : [value];
+  return values.flatMap((item) => nonEmpty(item) ?? []);
+}
+
+/** Filters as stored in the URL: singular keys (`?assignee=…&project=…`). */
+export interface BoardSearch {
+  assignee?: string[];
+  project?: ID[];
+  label?: ID;
+  priority?: Priority;
+  q?: string;
+}
+
 /** Reads filters from URL search params, dropping anything malformed. */
 export function filtersFromSearch(search: Record<string, unknown>): BoardFilters {
-  const assignee = nonEmpty(search["assignee"]);
+  const assignees = listParam(search["assignee"]);
+  const projects = listParam(search["project"]);
   const label = nonEmpty(search["label"]);
   const priority = isPriority(search["priority"]) ? search["priority"] : undefined;
   const q = nonEmpty(search["q"]);
   return {
-    ...(assignee ? { assignee } : {}),
+    ...(assignees.length > 0 ? { assignees } : {}),
+    ...(projects.length > 0 ? { projects } : {}),
     ...(label ? { label } : {}),
     ...(priority ? { priority } : {}),
     ...(q ? { q } : {}),
+  };
+}
+
+export function searchFromFilters(filters: BoardFilters): BoardSearch {
+  return {
+    ...(filters.assignees?.length ? { assignee: filters.assignees } : {}),
+    ...(filters.projects?.length ? { project: filters.projects } : {}),
+    ...(filters.label ? { label: filters.label } : {}),
+    ...(filters.priority ? { priority: filters.priority } : {}),
+    ...(filters.q ? { q: filters.q } : {}),
   };
 }
 
@@ -265,7 +295,7 @@ export function buildTask(input: NewTask, existing: readonly Task[], id: ID, now
   };
 }
 
-/** Applies an edit, keeping status ↔ done/completedAt and assigneeIds ↔ assigneeId in step. */
+/** Applies an edit, keeping status ↔ done/completedAt and assigneeIds ↔ assigneeId in step; a project move resets project-owned fields. */
 export function applyTaskPatch(task: Task, patch: Partial<Task>, now: string): Task {
   const synced = syncAssignees(patch);
   const statusFields =
@@ -274,7 +304,11 @@ export function applyTaskPatch(task: Task, patch: Partial<Task>, now: string): T
       : synced.done !== undefined && synced.done !== task.done
         ? donePatch(task, synced.done, now)
         : {};
-  return { ...task, ...synced, ...statusFields };
+  const next: Task = { ...task, ...synced, ...statusFields };
+  if (synced.projectId === undefined || synced.projectId === task.projectId) return next;
+  // Numbers and labels belong to a project: the server numbers the task in its new project.
+  const { number: _oldNumber, ...moved } = next;
+  return { ...moved, labels: [] };
 }
 
 export interface MoveRequest extends MoveTarget {

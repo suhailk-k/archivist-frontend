@@ -3,7 +3,7 @@ import { Check, ChevronDown, Plus } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { LABEL_COLORS, PRIORITIES, TASK_STATUSES, isPriority, isTaskStatus } from "@/lib/board";
 import { cn } from "@/lib/utils";
-import type { ID, LabelColor, Member, ProjectLabel, Task, TaskStatus } from "@/lib/types";
+import type { ID, LabelColor, Member, Project, ProjectLabel, Task, TaskStatus } from "@/lib/types";
 import { menuContent, menuItem, menuLabel } from "./menu-styles";
 import { LABEL_BORDER, LABEL_COLOR_NAME, LABEL_DOT, PRIORITY_LABEL, STATUS_META, STATUS_PILL } from "./status-meta";
 import { Avatar, PriorityIcon } from "./task-card";
@@ -71,7 +71,8 @@ function Row({ label, children }: { label: string; children: ReactNode }) {
 export interface DetailsPanelProps {
   task: Task;
   members: readonly Member[];
-  projectName: string | null;
+  /** Projects the task can move to (the org's). */
+  projects: readonly Project[];
   /** The project's labels; null for tasks outside a project. */
   labels: readonly ProjectLabel[] | null;
   canCreateLabels: boolean;
@@ -79,7 +80,7 @@ export interface DetailsPanelProps {
   onCreateLabel: (name: string, color: LabelColor) => ID;
 }
 
-export function DetailsPanel({ task, members, projectName, labels, canCreateLabels, onUpdate, onCreateLabel }: DetailsPanelProps) {
+export function DetailsPanel({ task, members, projects, labels, canCreateLabels, onUpdate, onCreateLabel }: DetailsPanelProps) {
   return (
     <div className="px-4 pb-4 pt-2">
       <Row label="Assignee">
@@ -108,7 +109,7 @@ export function DetailsPanel({ task, members, projectName, labels, canCreateLabe
         <PhaseField key={task.phase} task={task} onUpdate={onUpdate} />
       </Row>
       <Row label="Project">
-        <div className={cn(staticCell, projectName ? "text-accent" : placeholder)}>{projectName ?? "None"}</div>
+        <ProjectField task={task} projects={projects} onUpdate={onUpdate} />
       </Row>
     </div>
   );
@@ -173,6 +174,55 @@ function PriorityField({ task, onUpdate }: FieldProps) {
               </DropdownMenu.RadioItem>
             ))}
           </DropdownMenu.RadioGroup>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+const NO_PROJECT = "none";
+
+/** Moving a task renumbers it in the new project and clears its labels (they belong to the old one). */
+function ProjectField({ task, projects, onUpdate }: FieldProps & { projects: readonly Project[] }) {
+  const current = projects.find((project) => project.id === task.projectId);
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger aria-label={`Project: ${current?.name ?? "None"}`} className={valueCell}>
+        {current ? (
+          <>
+            <span className="rounded bg-ink/[0.06] px-1.5 py-0.5 font-mono text-[11.5px] text-ink-soft">{current.key}</span>
+            <span className="truncate">{current.name}</span>
+          </>
+        ) : (
+          <span className={placeholder}>No project</span>
+        )}
+        <ChevronDown size={14} className="ml-auto shrink-0 text-ink-soft" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={menuContent}>
+          <DropdownMenu.Label className={menuLabel}>Move to project</DropdownMenu.Label>
+          <DropdownMenu.RadioGroup
+            value={task.projectId ?? NO_PROJECT}
+            onValueChange={(value) => {
+              const projectId = value === NO_PROJECT ? null : value;
+              if (projectId !== task.projectId) onUpdate({ projectId });
+            }}
+          >
+            {projects.map((project) => (
+              <DropdownMenu.RadioItem key={project.id} value={project.id} className={menuItem}>
+                <span className="w-10 font-mono text-[11.5px] text-ink-soft">{project.key}</span>
+                <span className="truncate">{project.name}</span>
+                <CheckIndicator />
+              </DropdownMenu.RadioItem>
+            ))}
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+            <DropdownMenu.RadioItem value={NO_PROJECT} className={menuItem}>
+              <span className="w-10" />
+              No project
+              <CheckIndicator />
+            </DropdownMenu.RadioItem>
+          </DropdownMenu.RadioGroup>
+          {task.labels.length > 0 ? <p className="px-2 pb-1 pt-1.5 text-[11.5px] text-ink-soft">Moving clears this item's labels.</p> : null}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

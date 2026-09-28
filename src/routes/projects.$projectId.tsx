@@ -20,11 +20,11 @@ import { ProjectStatsGrid } from "@/components/project/project-stats";
 import { TABS, type Tab } from "@/components/project/constants";
 import { TeamTab } from "@/components/project/team-tab";
 import { ProjectDocs } from "@/components/project-docs";
-import { filtersFromSearch, type BoardFilters } from "@/lib/board";
+import { filtersFromSearch, searchFromFilters, type BoardFilters, type BoardSearch } from "@/lib/board";
 import { countProjectCascade, describeCascade } from "@/lib/cascade-counts";
 import { projectProgress, useStore } from "@/lib/store";
 
-interface ProjectSearch extends BoardFilters {
+interface ProjectSearch extends BoardSearch {
   tab?: Tab | undefined;
   /** Work item open in the detail sheet. */
   task?: string;
@@ -36,7 +36,7 @@ export const Route = createFileRoute("/projects/$projectId")({
     const task = search["task"];
     return {
       tab: TABS.find((t) => t === tab && t !== "Overview"),
-      ...filtersFromSearch(search),
+      ...searchFromFilters(filtersFromSearch(search)),
       ...(typeof task === "string" && task ? { task } : {}),
     };
   },
@@ -60,7 +60,7 @@ function ProjectDetail() {
   const tab: Tab = search.tab ?? "Overview";
   const setTab = (next: Tab) => void navigate({ search: (prev) => ({ ...prev, tab: next === "Overview" ? undefined : next }) });
   const setFilters = (filters: BoardFilters) =>
-    void navigate({ search: (prev) => ({ tab: prev.tab, ...(prev.task ? { task: prev.task } : {}), ...filters }), replace: true });
+    void navigate({ search: (prev) => ({ tab: prev.tab, ...(prev.task ? { task: prev.task } : {}), ...searchFromFilters(filters) }), replace: true });
   const setOpenTask = (id: string | undefined) =>
     void navigate({ search: (prev) => { const { task: _open, ...rest } = prev; return id ? { ...rest, task: id } : rest; } });
 

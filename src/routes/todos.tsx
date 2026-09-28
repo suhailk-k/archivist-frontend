@@ -6,13 +6,13 @@ import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { TaskBoard } from "@/components/board/task-board";
 import { ConfirmModal, SelectInput, TextInput } from "@/components/forms";
 import { Empty, ListSkeleton, Panel, PanelHead, Pill, Stat } from "@/components/kit";
-import { filtersFromSearch, type BoardFilters } from "@/lib/board";
+import { filtersFromSearch, searchFromFilters, type BoardFilters, type BoardSearch } from "@/lib/board";
 import { useOrgData, useStore } from "@/lib/store";
 import type { Priority, Task } from "@/lib/types";
 
 type TasksView = "board" | "list";
 
-interface TasksSearch extends BoardFilters {
+interface TasksSearch extends BoardSearch {
   /** Omitted for the default, the board. */
   view?: "list";
   /** Work item open in the detail sheet. */
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/todos")({
     const task = search["task"];
     return {
       ...(search["view"] === "list" ? { view: "list" as const } : {}),
-      ...filtersFromSearch(search),
+      ...searchFromFilters(filtersFromSearch(search)),
       ...(typeof task === "string" && task ? { task } : {}),
     };
   },
@@ -47,7 +47,7 @@ function Todos() {
   const view: TasksView = search.view ?? "board";
   const setView = (next: TasksView) => void navigate({ search: next === "list" ? { view: "list" } : {} });
   const setFilters = (filters: BoardFilters) =>
-    void navigate({ search: (prev) => ({ ...(prev.task ? { task: prev.task } : {}), ...filters }), replace: true });
+    void navigate({ search: (prev) => ({ ...(prev.task ? { task: prev.task } : {}), ...searchFromFilters(filters) }), replace: true });
   const setOpenTask = (id: string | undefined) =>
     void navigate({ search: (prev) => { const { task: _open, ...rest } = prev; return id ? { ...rest, task: id } : rest; } });
 
@@ -65,6 +65,7 @@ function Todos() {
             openTaskId={search.task}
             onOpenTask={setOpenTask}
             createIn={{ orgId, projectId: null }}
+            hasProjectFilter
           />
         </div>
       ) : (

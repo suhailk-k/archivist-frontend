@@ -88,3 +88,20 @@ export const STATUS_PILL: Record<TaskStatus, string> = {
   done: "bg-verd/15 text-verd hover:bg-verd/20",
   cancelled: "bg-rose/10 text-rose hover:bg-rose/15",
 };
+
+/** Avatar fills, one per member (stable across sessions), all drawn from the design tokens. */
+const AVATAR_TONES = [
+  "bg-accent",
+  "bg-verd",
+  "bg-rose",
+  "bg-amber",
+  "bg-[color-mix(in_oklab,var(--accent)_55%,var(--rose))]",
+  "bg-[color-mix(in_oklab,var(--verd)_60%,var(--accent))]",
+  "bg-ink-soft",
+] as const;
+
+export function avatarTone(id: string): string {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return AVATAR_TONES[hash % AVATAR_TONES.length] ?? "bg-accent";
+}

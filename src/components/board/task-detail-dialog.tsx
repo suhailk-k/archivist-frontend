@@ -13,6 +13,8 @@ export interface TaskDetailDialogProps {
   /** The open task; the dialog is closed while this is undefined. */
   task: Task | undefined;
   project: Project | undefined;
+  /** The org's projects, for moving the task. */
+  projects: readonly Project[];
   members: readonly Member[];
   canManageLabels: boolean;
   onClose: () => void;
@@ -50,7 +52,7 @@ export function TaskDetailDialog(props: TaskDetailDialogProps) {
   );
 }
 
-function DialogBody({ task, project, members, canManageLabels, onClose, onUpdate, onDelete, onCreateLabel }: TaskDetailDialogProps & { task: Task }) {
+function DialogBody({ task, project, projects, members, canManageLabels, onClose, onUpdate, onDelete, onCreateLabel }: TaskDetailDialogProps & { task: Task }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(true);
   const update = (patch: Partial<Task>) => onUpdate(task.id, patch);
@@ -121,7 +123,7 @@ function DialogBody({ task, project, members, canManageLabels, onClose, onUpdate
                 <DetailsPanel
                   task={task}
                   members={members}
-                  projectName={project?.name ?? null}
+                  projects={projects}
                   labels={project?.labels ?? null}
                   canCreateLabels={canManageLabels}
                   onUpdate={update}

@@ -4,7 +4,7 @@ import { Calendar, SquareCheck } from "lucide-react";
 import type { KeyboardEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { ID, Member, Priority, ProjectLabel, Task } from "@/lib/types";
-import { LABEL_BORDER, PRIORITY_LABEL, initials, shortDate } from "./status-meta";
+import { LABEL_BORDER, PRIORITY_LABEL, avatarTone, initials, shortDate } from "./status-meta";
 
 const MAX_AVATARS = 2;
 const MAX_LABEL_CHIPS = 3;
@@ -99,13 +99,17 @@ export function TaskCard({ task, taskKey, projectLabels, membersById, today, onO
   );
 }
 
-export function Avatar({ member, size = "md" }: { member: Member; size?: "sm" | "md" }) {
+const AVATAR_SIZE = { sm: "size-5 text-[11px]", md: "size-6 text-[11px]", lg: "size-8 text-[12px]" } as const;
+
+export function Avatar({ member, size = "md", className }: { member: Member; size?: keyof typeof AVATAR_SIZE; className?: string }) {
   return (
     <span
       title={member.name}
       className={cn(
-        "grid shrink-0 place-items-center rounded-full bg-accent font-semibold leading-none text-paper ring-2 ring-panel",
-        size === "sm" ? "size-5 text-[11px]" : "size-6 text-[11px]",
+        "grid shrink-0 place-items-center rounded-full font-semibold leading-none text-paper ring-2 ring-panel",
+        avatarTone(member.id),
+        AVATAR_SIZE[size],
+        className,
       )}
     >
       {initials(member.name)}

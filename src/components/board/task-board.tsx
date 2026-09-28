@@ -21,12 +21,14 @@ export interface TaskBoardProps {
   onFiltersChange: (next: BoardFilters) => void;
   openTaskId: ID | undefined;
   onOpenTask: (id: ID | undefined) => void;
-  /** Where "+ New work item" puts new cards. */
+  /** Where "+ Create" puts new cards (the org board uses the project filter when exactly one is picked). */
   createIn: { orgId: ID; projectId: ID | null };
+  /** Show the Project filter (the org-wide Tasks board). */
+  hasProjectFilter?: boolean;
 }
 
 /** Filters + board + detail sheet, wired to the store. Used by the project Board tab and the Tasks page. */
-export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, openTaskId, onOpenTask, createIn }: TaskBoardProps) {
+export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, openTaskId, onOpenTask, createIn, hasProjectFilter = false }: TaskBoardProps) {
   const { hydrated, addTask, moveTask, updateTask, removeTask, updateProject } = useStore();
   const { user } = useAuth();
   const memberId = user?.memberId ?? null;
@@ -47,20 +49,22 @@ export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, 
     return [...projectIds].flatMap((id) => projectsById.get(id)?.labels ?? []);
   }, [tasks, createIn.projectId, projectsById]);
 
+  const onlyFilteredProject = filters.projects?.length === 1 ? filters.projects[0] ?? null : null;
+  const createProjectId = createIn.projectId ?? onlyFilteredProject;
   const create = useCallback(
     (status: TaskStatus, title: string) =>
       addTask({
         orgId: createIn.orgId,
-        projectId: createIn.projectId,
+        projectId: createProjectId,
         title,
-        phase: createIn.projectId ? "Unsorted" : "Admin",
+        phase: createProjectId ? "Unsorted" : "Admin",
         done: false,
         priority: "normal",
         dueDate: "",
         assigneeId: null,
         status,
       }),
-    [addTask, createIn.orgId, createIn.projectId],
+    [addTask, createIn.orgId, createProjectId],
   );
 
   const createLabel = (projectId: ID, name: string, color: LabelColor): ID => {
@@ -76,7 +80,7 @@ export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, 
 
   return (
     <div className="space-y-3">
-      <BoardFiltersBar filters={filters} onChange={onFiltersChange} members={members} labels={labels} memberId={memberId} />
+      <BoardFiltersBar filters={filters} onChange={onFiltersChange} members={members} labels={labels} projects={hasProjectFilter ? projects : undefined} memberId={memberId} />
       {hydrated ? (
         <BoardView tasks={visible} projectsById={projectsById} members={members} onMove={moveTask} onOpen={onOpenTask} onCreate={create} />
       ) : (
@@ -91,6 +95,7 @@ export function TaskBoard({ tasks, projects, members, filters, onFiltersChange, 
       <TaskDetailDialog
         task={openTask}
         project={openTask?.projectId ? projectsById.get(openTask.projectId) : undefined}
+        projects={projects}
         members={members}
         canManageLabels={user?.role === "superadmin"}
         onClose={() => onOpenTask(undefined)}
