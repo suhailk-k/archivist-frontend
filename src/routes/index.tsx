@@ -60,7 +60,7 @@ function Dashboard() {
               <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 px-2 pb-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">
                 <span>Project</span>
                 <span className="w-24">Owner</span>
-                <span className="w-24 text-right">Status</span>
+                <span className="w-28 text-right">Status</span>
               </div>
               {!hydrated ? (
                 <div className="p-2">
@@ -87,8 +87,8 @@ function Dashboard() {
                         <Progress value={projectProgress(tasks, p.id)} tone={PROJECT_STATUS_TONE[p.status]} />
                       </div>
                     </div>
-                    <div className="w-24 font-mono text-[11px] text-ink-soft">{owner?.name ?? "—"}</div>
-                    <div className="w-24 text-right">
+                    <div className="w-24 truncate font-mono text-[11px] text-ink-soft" title={owner?.name}>{owner?.name ?? "—"}</div>
+                    <div className="w-28 text-right">
                       <Pill tone={PROJECT_STATUS_TONE[p.status]}>{PROJECT_STATUS_LABEL[p.status]}</Pill>
                     </div>
                   </Link>
