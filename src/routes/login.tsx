@@ -31,7 +31,7 @@ function LoginPage() {
 
   return (
     <main className="grid min-h-screen place-items-center bg-paper px-4 text-ink">
-      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6 shadow-xl">
+      <form onSubmit={submit} className="w-full max-w-sm rounded-2xl border border-line bg-panel p-6">
         <div className="mb-6">
           <div className="font-display text-2xl font-medium">Archivist</div>
           <p className="mt-1 text-sm text-ink-soft">Sign in to your workspace</p>

@@ -100,7 +100,7 @@ export function ProjectDocs({ projectId, orgId }: ProjectDocsProps) {
         }}
       />
 
-      <div className="rounded-xl border border-line bg-panel p-3 shadow-sm">
+      <div className="rounded-xl border border-line bg-panel p-3">
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0">
             <h2 className="text-[15px] font-semibold text-ink">Documents</h2>
@@ -201,7 +201,7 @@ interface DocCardProps {
 function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
   const Icon = docIcon(doc);
   return (
-    <li className="group rounded-xl border border-line bg-panel p-3.5 shadow-sm transition-colors hover:border-accent/30">
+    <li className="group rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/30">
       <div className="flex gap-3">
         <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-accent/10 text-accent">
           <Icon size={16} />

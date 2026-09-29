@@ -15,10 +15,10 @@ const toneDot: Record<Tone, string> = {
 };
 
 const tonePill: Record<Tone, string> = {
-  accent: "bg-accent/20 text-accent ring-accent/30 shadow-sm shadow-accent/10",
-  verd: "bg-verd/15 text-verd ring-verd/25 shadow-sm shadow-verd/10",
-  amber: "bg-amber/15 text-amber ring-amber/25 shadow-sm shadow-amber/10",
-  rose: "bg-rose/15 text-rose ring-rose/25 shadow-sm shadow-rose/10",
+  accent: "bg-accent/20 text-accent ring-accent/30",
+  verd: "bg-verd/15 text-verd ring-verd/25",
+  amber: "bg-amber/15 text-amber ring-amber/25",
+  rose: "bg-rose/15 text-rose ring-rose/25",
   line: "bg-line/20 text-ink ring-line/30",
 };
 
@@ -26,7 +26,7 @@ export function Panel({ className, children }: { className?: string; children: R
   return (
     <section
       className={cn(
-        "rounded-[var(--radius-xl)] border border-line/60 bg-panel/80 backdrop-blur-md shadow-lg shadow-black/20 rise",
+        "rounded-[var(--radius-xl)] border border-line/60 bg-panel/80 backdrop-blur-md rise",
         className,
       )}
     >
@@ -74,7 +74,7 @@ export function Stat({ label, value, note, tone = "line" }: { label: string; val
   const noteColor =
     tone === "verd" ? "text-verd/80" : tone === "amber" ? "text-amber/80" : tone === "rose" ? "text-rose/80" : "text-ink-soft/70";
   return (
-    <div className="rounded-[var(--radius-xl)] border border-line/60 bg-panel/80 backdrop-blur-md shadow-lg shadow-black/20 rise p-4">
+    <div className="rounded-[var(--radius-xl)] border border-line/60 bg-panel/80 backdrop-blur-md rise p-4">
       <div className="label-mono text-ink-soft/70">{label}</div>
       <div className="mt-2 flex items-end gap-2">
         <span className="font-display text-[30px] font-medium leading-none text-ink">{value}</span>
@@ -119,7 +119,7 @@ export function Timeline({
 
 export function Empty({ text }: { text: string }) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-dashed border-line/40 bg-panel/40 px-4 py-8 text-center shadow-inset">
+    <div className="rounded-[var(--radius-lg)] border border-dashed border-line/40 bg-panel/40 px-4 py-8 text-center">
       <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft/70">{text}</p>
     </div>
   );
@@ -131,7 +131,7 @@ export function DateChip({ date, tone = "accent" }: { date: string; tone?: Tone 
   const ring =
     tone === "verd" ? "bg-verd/20 text-verd ring-verd/30" : tone === "amber" ? "bg-amber/20 text-amber ring-amber/30" : "bg-accent/20 text-accent ring-accent/30";
   return (
-    <div className={cn("grid size-11 shrink-0 place-items-center rounded-lg leading-none ring-1 shadow-sm", ring)}>
+    <div className={cn("grid size-11 shrink-0 place-items-center rounded-lg leading-none ring-1", ring)}>
       <div className="font-mono text-[13px] font-medium">{valid ? d.getDate() : "–"}</div>
       <div className="font-mono text-[7px] uppercase tracking-wide">
         {valid ? d.toLocaleDateString(undefined, { weekday: "short" }) : ""}

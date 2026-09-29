@@ -76,7 +76,7 @@ function ProjectDetail() {
         trigger={
           <button
             type="button"
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-[12.5px] font-semibold text-paper shadow-sm hover:opacity-90"
+            className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-accent px-4 text-[12.5px] font-semibold text-paper hover:opacity-90"
           >
             <UsersRound size={15} />
             Manage

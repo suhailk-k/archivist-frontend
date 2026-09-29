@@ -27,7 +27,7 @@ function ProjectStat({
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-4 text-left shadow-sm transition-colors hover:border-accent/30"
+      className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-4 text-left transition-colors hover:border-accent/30"
     >
       <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${TONE_CLASSES[tone]}`}>
         <Icon size={20} />

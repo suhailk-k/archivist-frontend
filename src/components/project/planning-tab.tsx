@@ -40,7 +40,7 @@ export function PlanningTab({ projectId }: { projectId: string }) {
         }}
       />
       <div className="space-y-3">
-        <div className="rounded-xl border border-line bg-panel p-4 shadow-sm">
+        <div className="rounded-xl border border-line bg-panel p-4">
           <div className="label-mono mb-3">Add a task</div>
           <div className="grid gap-2 md:grid-cols-[1fr_auto]">
             <TextInput value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What needs doing?" />
@@ -86,7 +86,7 @@ export function PlanningTab({ projectId }: { projectId: string }) {
         {phases.length === 0 ? <Empty text="No tasks planned yet" /> : null}
 
         {phases.map((ph) => (
-          <div key={ph} className="rounded-xl border border-line bg-panel p-4 shadow-sm">
+          <div key={ph} className="rounded-xl border border-line bg-panel p-4">
             <div className="label-mono mb-2">{ph}</div>
             <div className="space-y-1">
               {tasks
@@ -125,7 +125,7 @@ export function PlanningTab({ projectId }: { projectId: string }) {
         ))}
       </div>
 
-      <div className="rounded-xl border border-line bg-panel p-4 shadow-sm">
+      <div className="rounded-xl border border-line bg-panel p-4">
         <div className="label-mono mb-3">Milestones</div>
         <div className="space-y-2">
           {milestones.map((m) => (

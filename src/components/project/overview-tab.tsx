@@ -21,7 +21,7 @@ import type { Activity, Member, Milestone, Project, Task } from "@/lib/types";
 
 function ProjectCard({ title, icon: Icon, action, children }: { title: string; icon: LucideIcon; action?: ReactNode; children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-line bg-panel shadow-sm">
+    <div className="rounded-2xl border border-line bg-panel">
       <div className="flex items-center gap-2 border-b border-line/60 px-4 py-3.5">
         <Icon size={16} className="text-ink-soft/70" />
         <span className="text-[13.5px] font-semibold text-ink">{title}</span>
@@ -165,7 +165,7 @@ export function OverviewTab({
           <button
             type="button"
             onClick={() => onTabChange("Planning")}
-            className="inline-flex items-center rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-paper shadow-sm hover:opacity-90"
+            className="inline-flex items-center rounded-xl bg-accent px-4 py-2.5 text-xs font-semibold text-paper hover:opacity-90"
           >
             <Plus size={15} className="mr-1.5" />
             Create Task

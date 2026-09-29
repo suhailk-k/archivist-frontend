@@ -67,7 +67,7 @@ export function TaskCard({ task, taskKey, projectLabels, membersById, today, onO
       onClick={() => onOpen?.(task.id)}
       onKeyUp={suppressSpaceClick}
       className={cn(
-        "block w-full touch-manipulation select-none rounded-lg border border-line bg-panel px-3 pb-2.5 pt-3 text-left shadow-[0_1px_1px_color-mix(in_oklab,var(--ink)_8%,transparent)] outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--panel)_94%,var(--ink))] focus-visible:ring-2 focus-visible:ring-accent/50",
+        "block w-full touch-manipulation select-none rounded-lg border border-line bg-panel px-3 pb-2.5 pt-3 text-left outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--panel)_94%,var(--ink))] focus-visible:ring-2 focus-visible:ring-accent/50",
         isOverlay && "cursor-grabbing shadow-xl shadow-ink/15 ring-1 ring-accent/25",
         className,
       )}

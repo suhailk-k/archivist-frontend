@@ -22,7 +22,7 @@ export function ProjectHero({
   onTabChange: (tab: Tab) => void;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-line bg-panel shadow-sm">
+    <section className="relative overflow-hidden rounded-2xl border border-line bg-panel">
       <div className="relative grid gap-8 p-6 md:grid-cols-[minmax(0,1fr)_280px] md:p-7">
         <div className="max-w-3xl">
           <div className="flex flex-wrap items-center gap-3">

@@ -88,7 +88,7 @@ function DayColumn({ ctx, day, bucket }: { ctx: PlannerContext; day: DateKey; bu
   return (
     <section
       className={cn(
-        "flex min-h-56 flex-col rounded-xl border bg-panel/80 shadow-sm",
+        "flex min-h-56 flex-col rounded-xl border bg-panel/80",
         isToday ? "border-accent ring-1 ring-accent/30" : "border-line/60",
       )}
     >

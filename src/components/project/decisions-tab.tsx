@@ -8,7 +8,7 @@ export function DecisionsTab({ decisions, members }: { decisions: Decision[]; me
     <div className="space-y-2.5">
       {decisions.length === 0 ? <Empty text="No decisions recorded" /> : null}
       {decisions.map((decision) => (
-        <div key={decision.id} className="rounded-xl border border-line bg-panel p-3 shadow-sm">
+        <div key={decision.id} className="rounded-xl border border-line bg-panel p-3">
           <div className="flex items-center gap-2">
             <span className="text-[13.5px] font-medium">{decision.title}</span>
             <span className="ml-auto">

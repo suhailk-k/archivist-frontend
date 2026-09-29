@@ -47,7 +47,7 @@ export function TeamTab({
         </GhostButton>
       </div>
       {assignedMembers.map((member) => (
-        <div key={member.id} className="flex items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2.5 shadow-sm">
+        <div key={member.id} className="flex items-center gap-3 rounded-xl border border-line bg-panel px-3 py-2.5">
           <div className="grid size-8 place-items-center rounded-full bg-accent-soft text-[11px] text-accent">{member.name.slice(0, 1)}</div>
           <div className="min-w-0">
             <div className="truncate text-[13px] font-medium">{member.name}</div>

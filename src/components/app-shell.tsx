@@ -94,7 +94,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <>
       <div className="border-b border-white/10 px-5 py-5">
         <Link to="/" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold italic shadow-lg shadow-indigo-900/30">
+          <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold italic">
             A
           </div>
           <div>
@@ -164,7 +164,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 onClick={onNavigate}
                 className={cn(
                   "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                  active ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+                  active ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
                 )}
               >
                 <Icon size={17} strokeWidth={1.8} />
@@ -185,7 +185,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-              pathname.startsWith("/organisations") ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+              pathname.startsWith("/organisations") ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
             )}
           >
             <Users size={17} strokeWidth={1.8} />
@@ -200,7 +200,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               onClick={onNavigate}
               className={cn(
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                pathname.startsWith("/admin") ? "bg-accent text-white shadow-lg shadow-indigo-950/25" : "text-slate-300 hover:bg-white/10 hover:text-white",
+                pathname.startsWith("/admin") ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
               )}
             >
               <Settings2 size={17} strokeWidth={1.8} />
@@ -334,7 +334,7 @@ export function PageHeader({
   action?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-20 border-b border-line/60 bg-paper/90 shadow-[0_4px_16px_-8px_rgba(15,23,42,0.15)] backdrop-blur-xl">
+    <header className="sticky top-0 z-20 border-b border-line/60 bg-paper/90 backdrop-blur-xl">
       <div className="flex items-center gap-4 px-6 py-3.5 md:px-8">
         <div className="min-w-0">
           <h1 className="truncate font-display text-[22px] font-medium tracking-tight">{title}</h1>
@@ -362,7 +362,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_16px_-4px_rgba(79,70,229,0.35)] active:translate-y-0 active:shadow-none focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45 disabled:hover:translate-y-0 disabled:hover:shadow-none"
+      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:-translate-y-0.5 active:translate-y-0 focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45 disabled:hover:translate-y-0"
     >
       {children}
     </button>

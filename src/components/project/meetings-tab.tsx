@@ -8,7 +8,7 @@ export function MeetingsTab({ meetings }: { meetings: Meeting[] }) {
     <div className="space-y-2.5">
       {meetings.length === 0 ? <Empty text="No meetings for this project" /> : null}
       {meetings.map((meeting) => (
-        <div key={meeting.id} className="flex items-start gap-3 rounded-xl border border-line bg-panel p-3 shadow-sm">
+        <div key={meeting.id} className="flex items-start gap-3 rounded-xl border border-line bg-panel p-3">
           <DateChip date={meeting.date} />
           <div className="min-w-0">
             <div className="text-[13.5px] font-medium">{meeting.title}</div>
