@@ -1,8 +1,11 @@
 import type { SessionUser } from "./auth";
+import { describePermissions, samePermissions, type Permissions } from "./permissions";
 
 export interface UserAccess {
   organisationIds: string[];
   projectIds: string[];
+  /** Document and credential levels; absent means full access (older accounts, new invites). */
+  permissions?: Permissions;
 }
 
 export interface AdminUser extends SessionUser {
@@ -28,6 +31,7 @@ export function toggleOrganisation(access: UserAccess, organisationId: string, p
   }
   const inOrg = new Set(projects.filter((project) => project.orgId === organisationId).map((project) => project.id));
   return {
+    ...access,
     organisationIds: without(access.organisationIds, organisationId),
     projectIds: access.projectIds.filter((projectId) => !inOrg.has(projectId)),
   };
@@ -36,7 +40,7 @@ export function toggleOrganisation(access: UserAccess, organisationId: string, p
 /** Granting a project implies its organisation, so the grant is always valid. */
 export function toggleProject(access: UserAccess, project: ProjectRef): UserAccess {
   if (access.projectIds.includes(project.id)) return { ...access, projectIds: without(access.projectIds, project.id) };
-  return { organisationIds: including(access.organisationIds, project.orgId), projectIds: [...access.projectIds, project.id] };
+  return { ...access, organisationIds: including(access.organisationIds, project.orgId), projectIds: [...access.projectIds, project.id] };
 }
 
 /** "All" / "None" for one organisation's projects. "All" grants the organisation too. */
@@ -44,12 +48,12 @@ export function setOrganisationProjects(access: UserAccess, organisationId: stri
   const inOrg = projects.filter((project) => project.orgId === organisationId).map((project) => project.id);
   const others = access.projectIds.filter((projectId) => !inOrg.includes(projectId));
   if (!granted) return { ...access, projectIds: others };
-  return { organisationIds: including(access.organisationIds, organisationId), projectIds: [...others, ...inOrg] };
+  return { ...access, organisationIds: including(access.organisationIds, organisationId), projectIds: [...others, ...inOrg] };
 }
 
 export function sameAccess(a: UserAccess, b: UserAccess): boolean {
   const same = (x: string[], y: string[]) => x.length === y.length && x.every((value) => y.includes(value));
-  return same(a.organisationIds, b.organisationIds) && same(a.projectIds, b.projectIds);
+  return same(a.organisationIds, b.organisationIds) && same(a.projectIds, b.projectIds) && samePermissions(a.permissions, b.permissions);
 }
 
 export function hasNoAccess(user: AdminUser): boolean {
@@ -61,7 +65,9 @@ export function describeAccess(user: AdminUser): string {
   const { organisationIds, projectIds } = user.access;
   if (organisationIds.length === 0) return "No access";
   const orgs = `${organisationIds.length} org${organisationIds.length === 1 ? "" : "s"}`;
-  return `${orgs} · ${projectIds.length} project${projectIds.length === 1 ? "" : "s"}`;
+  const grants = `${orgs} · ${projectIds.length} project${projectIds.length === 1 ? "" : "s"}`;
+  const restricted = user.access.permissions ? describePermissions(user.access.permissions) : "";
+  return restricted ? `${grants} · ${restricted}` : grants;
 }
 
 export function filterUsers(users: AdminUser[], query: string, filter: UserFilter): AdminUser[] {

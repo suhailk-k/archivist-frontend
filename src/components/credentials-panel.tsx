@@ -6,6 +6,7 @@ import { ConfirmModal, Field, Modal, TextArea, TextInput } from "@/components/fo
 import { Empty, SecretValue } from "@/components/kit";
 import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 import { CREDENTIAL_CATEGORY_SUGGESTIONS, type Credential, type ID } from "@/lib/types";
 
 export const CREDENTIAL_CATEGORY_SUGGESTIONS_ID = "credential-category-suggestions";
@@ -117,6 +118,7 @@ export function CredentialRow({
   onDelete: () => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { canEditCredentials, canRevealSecrets } = usePermissions();
 
   return (
     <div className="rounded-xl border border-line bg-panel/40 p-3">
@@ -131,6 +133,7 @@ export function CredentialRow({
           </div>
           {credential.usedFor ? <p className="mt-1 text-[12px] text-ink-soft">Used for: {credential.usedFor}</p> : null}
         </div>
+        {canEditCredentials ? (
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -149,6 +152,7 @@ export function CredentialRow({
             <Trash2 size={14} />
           </button>
         </div>
+        ) : null}
       </div>
       <div className="mt-2 grid gap-x-4 gap-y-1.5 text-[12px] sm:grid-cols-2">
         <div className="flex items-center gap-1.5">
@@ -157,7 +161,11 @@ export function CredentialRow({
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-ink-soft">Secret</span>
-          <SecretValue credentialId={credential.id} hasSecret={Boolean(credential.hasSecret)} />
+          {canRevealSecrets ? (
+            <SecretValue credentialId={credential.id} hasSecret={Boolean(credential.hasSecret)} />
+          ) : (
+            <span className="text-ink-soft" title="You can see this credential but not its secret">{credential.hasSecret ? "•••••• (hidden)" : "—"}</span>
+          )}
         </div>
         {credential.url && isHttpUrl(credential.url) ? (
           <a
@@ -197,6 +205,7 @@ export function CredentialsPanel({ orgId, projectId }: { orgId: ID; projectId: I
   const credentials = db.credentials.filter((c) => c.orgId === orgId && c.projectId === projectId);
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
+  const { canEditCredentials } = usePermissions();
   const [form, setForm] = useState<CredentialFormState>(EMPTY_CREDENTIAL_FORM);
 
   const openCreate = () => {
@@ -232,10 +241,12 @@ export function CredentialsPanel({ orgId, projectId }: { orgId: ID; projectId: I
         <div className="text-[12px] text-ink-soft">
           {credentials.length} credential{credentials.length === 1 ? "" : "s"}
         </div>
+        {canEditCredentials ? (
         <GhostButton onClick={openCreate}>
           <Plus size={14} className="mr-1 inline" />
           Add credential
         </GhostButton>
+        ) : null}
       </div>
 
       {credentials.length === 0 ? <Empty text="No credentials saved yet" /> : null}

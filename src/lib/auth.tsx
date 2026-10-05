@@ -1,3 +1,4 @@
+import type { Permissions } from "./permissions";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiGet, apiPost, ApiRequestError, setUnauthorizedHandler } from "./api-client";
 
@@ -12,6 +13,8 @@ export interface SessionUser {
   disabled: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Document/credential levels from the server; absent on older backends (treated as full access). */
+  permissions?: Permissions;
 }
 
 interface AuthValue {

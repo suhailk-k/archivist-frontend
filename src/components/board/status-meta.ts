@@ -85,9 +85,23 @@ export const STATUS_PILL: Record<TaskStatus, string> = {
   todo: "bg-ink/[0.06] text-ink hover:bg-ink/10",
   in_progress: "bg-accent-soft text-accent hover:bg-accent/15",
   in_review: "bg-accent-soft text-accent hover:bg-accent/15",
-  done: "bg-verd/15 text-verd hover:bg-verd/20",
+  done: "bg-verd-soft text-verd-ink hover:bg-verd-soft/80",
   cancelled: "bg-rose/10 text-rose hover:bg-rose/15",
 };
+
+/** Small uppercase status tag (Jira "lozenge"), used on swimlane headers and child rows. */
+export const STATUS_LOZENGE: Record<TaskStatus, string> = {
+  backlog: "bg-ink/[0.06] text-ink-soft",
+  todo: "bg-ink/[0.06] text-ink-soft",
+  in_progress: "bg-accent-soft text-accent",
+  in_review: "bg-accent-soft text-accent",
+  done: "bg-verd-soft text-verd-ink",
+  cancelled: "bg-rose/10 text-rose",
+};
+
+/** Shared by column bodies and the swimlane header row so lanes line up. */
+export const COLUMN_WIDTH = "w-[min(272px,85vw)]";
+export const COLUMN_GAP = "gap-2";
 
 /** Avatar fills, one per member (stable across sessions), all drawn from the design tokens. */
 const AVATAR_TONES = [

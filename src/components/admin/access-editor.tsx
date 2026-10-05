@@ -1,4 +1,5 @@
 import { setOrganisationProjects, toggleOrganisation, toggleProject, type UserAccess } from "@/lib/access-rules";
+import { PermissionLevels } from "@/components/admin/permission-levels";
 
 export interface AccessEditorProps {
   access: UserAccess;
@@ -17,6 +18,7 @@ export function AccessEditor({ access, onChange, organisations, projects, disabl
 
   return (
     <div className="space-y-2">
+      <PermissionLevels value={access.permissions} onChange={(permissions) => onChange({ ...access, permissions })} disabled={disabled} />
       {organisations.map((organisation) => {
         const orgProjects = projects.filter((project) => project.orgId === organisation.id);
         const granted = access.organisationIds.includes(organisation.id);

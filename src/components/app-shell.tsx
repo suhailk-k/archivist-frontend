@@ -27,6 +27,7 @@ import { CommandSearch } from "@/components/command-search";
 import { useAuth } from "@/lib/auth";
 import { buildDailyPlan, todayKey } from "@/lib/daily-plan";
 import { useOrgData, useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -73,6 +74,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { db, orgId, setOrgId, org, syncError, refresh } = useStore();
   const { user, logout } = useAuth();
   const data = useOrgData();
+  const { canSeeDocuments, canSeeCredentials } = usePermissions();
+  const hiddenRoutes = new Set<string>([...(canSeeDocuments ? [] : ["/documents"]), ...(canSeeCredentials ? [] : ["/credentials"])]);
   const [signingOut, setSigningOut] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -92,14 +95,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <>
-      <div className="border-b border-white/10 px-5 py-5">
+      <div className="border-b border-line px-5 py-5">
         <Link to="/" className="flex items-center gap-3" onClick={onNavigate}>
-          <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-xl font-semibold italic">
+          <div className="grid size-10 place-items-center rounded-xl bg-accent text-xl font-semibold text-white">
             A
           </div>
           <div>
             <div className="text-[16px] font-semibold tracking-tight">Archivist</div>
-            <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-slate-400">Personal OS</div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.04em] text-ink-soft">Personal OS</div>
           </div>
         </Link>
       </div>
@@ -109,20 +112,20 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <DropdownMenu.Trigger asChild>
             <button
               type="button"
-              className="flex w-full items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-left text-[12px] hover:bg-white/10 data-[state=open]:bg-white/10"
+              className="flex w-full items-center gap-2 rounded-md border border-line bg-panel px-3 py-2 text-left text-[13px] hover:bg-ink/[0.04] data-[state=open]:bg-ink/[0.06]"
             >
-              <span className="grid size-6 place-items-center rounded-md bg-emerald-400/20 text-[11px] font-semibold text-emerald-300">
+              <span className="grid size-6 place-items-center rounded-md bg-verd-soft text-[11px] font-semibold text-verd-ink">
                 {orgInitials(org?.name)}
               </span>
               <span className="truncate font-medium">{org?.name ?? "No organisation"}</span>
-              <ChevronDown className="ml-auto text-slate-400" size={15} />
+              <ChevronDown className="ml-auto text-ink-soft" size={15} />
             </button>
           </DropdownMenu.Trigger>
           <DropdownMenu.Portal>
             <DropdownMenu.Content
               align="start"
               sideOffset={6}
-              className="z-50 w-[220px] rounded-xl border border-white/10 bg-[#1a2233] p-2 text-slate-200 shadow-xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+              className="z-50 w-[220px] rounded-md border border-line bg-panel p-1.5 text-ink shadow-overlay data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
             >
               {db.organisations
                 .filter((organisation) => organisation.id !== orgId)
@@ -130,18 +133,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   <DropdownMenu.Item
                     key={organisation.id}
                     onSelect={() => setOrgId(organisation.id)}
-                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-300 outline-none hover:bg-white/10 hover:text-white data-[highlighted]:bg-white/10 data-[highlighted]:text-white"
+                    className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-ink outline-none hover:bg-ink/[0.05] data-[highlighted]:bg-ink/[0.05]"
                   >
-                    <span className="size-1.5 rounded-full bg-slate-500" />
+                    <span className="size-1.5 rounded-full bg-ink-soft" />
                     {organisation.name}
                   </DropdownMenu.Item>
                 ))}
-              <DropdownMenu.Separator className="my-1 h-px bg-white/10" />
+              <DropdownMenu.Separator className="my-1 h-px bg-line" />
               <DropdownMenu.Item asChild>
                 <Link
                   to="/organisations"
                   onClick={onNavigate}
-                  className="block cursor-pointer rounded-lg px-2 py-1.5 text-xs text-indigo-300 outline-none hover:bg-white/10 data-[highlighted]:bg-white/10"
+                  className="block cursor-pointer rounded-lg px-2 py-1.5 text-xs text-accent outline-none hover:bg-ink/[0.05] data-[highlighted]:bg-ink/[0.05]"
                 >
                   Manage organisations →
                 </Link>
@@ -152,9 +155,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Workspace</div>
+        <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-soft">Workspace</div>
         <div className="space-y-1">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !hiddenRoutes.has(item.to)).map((item) => {
             const Icon = item.icon;
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (
@@ -163,14 +166,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                 to={item.to}
                 onClick={onNavigate}
                 className={cn(
-                  "group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                  active ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
+                  "group flex items-center gap-3 rounded-md px-3 py-2 text-[14px] transition-colors",
+                  active ? "bg-accent-soft font-medium text-accent" : "text-ink-soft hover:bg-ink/[0.06] hover:text-ink",
                 )}
               >
                 <Icon size={17} strokeWidth={1.8} />
                 <span>{item.label}</span>
                 {counts[item.to] !== undefined ? (
-                  <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", active ? "bg-white/15" : "bg-white/10 text-slate-300")}>
+                  <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", active ? "bg-accent/10" : "bg-ink/[0.06] text-ink-soft")}>
                     {counts[item.to]}
                   </span>
                 ) : null}
@@ -178,19 +181,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             );
           })}
         </div>
-        <div className="px-2 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Account</div>
+        <div className="px-2 pb-2 pt-7 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-soft">Account</div>
         <div className="space-y-1">
           <Link
             to="/organisations"
             onClick={onNavigate}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-              pathname.startsWith("/organisations") ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
+              "flex items-center gap-3 rounded-md px-3 py-2 text-[14px] transition-colors",
+              pathname.startsWith("/organisations") ? "bg-accent-soft font-medium text-accent" : "text-ink-soft hover:bg-ink/[0.06] hover:text-ink",
             )}
           >
             <Users size={17} strokeWidth={1.8} />
             Organisations
-            <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", pathname.startsWith("/organisations") ? "bg-white/15" : "bg-white/10 text-slate-300")}>
+            <span className={cn("ml-auto rounded-full px-2 py-0.5 text-[11px]", pathname.startsWith("/organisations") ? "bg-accent/10" : "bg-ink/[0.06] text-ink-soft")}>
               {db.organisations.length}
             </span>
           </Link>
@@ -199,8 +202,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               to="/admin"
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] transition-colors",
-                pathname.startsWith("/admin") ? "bg-accent text-white" : "text-slate-300 hover:bg-white/10 hover:text-white",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-[14px] transition-colors",
+                pathname.startsWith("/admin") ? "bg-accent-soft font-medium text-accent" : "text-ink-soft hover:bg-ink/[0.06] hover:text-ink",
               )}
             >
               <Settings2 size={17} strokeWidth={1.8} />
@@ -214,23 +217,23 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <button
           type="button"
           onClick={() => void refresh().catch(() => toast.error("Archivist backend is still unreachable"))}
-          className="mx-4 mb-3 rounded-xl border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-left text-xs text-rose-200"
+          className="mx-4 mb-3 rounded-md border border-rose/30 bg-rose/10 px-3 py-2 text-left text-xs text-rose"
         >
           Backend offline · retry
         </button>
       ) : null}
       {user ? (
-        <div className="border-t border-white/10 px-4 py-4">
+        <div className="border-t border-line px-4 py-4">
           <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-full bg-accent font-semibold">{user.displayName.slice(0, 1).toUpperCase()}</div>
+            <div className="grid size-9 place-items-center rounded-full bg-accent font-semibold text-white">{user.displayName.slice(0, 1).toUpperCase()}</div>
             <button
               type="button"
               onClick={() => setAccountOpen(true)}
-              className="min-w-0 rounded-lg text-left hover:text-white"
+              className="min-w-0 rounded-md text-left hover:text-accent"
               aria-label="Account settings"
             >
               <div className="truncate text-[12px] font-medium">{user.displayName}</div>
-              <div className="text-[11px] text-slate-400">{user.role === "superadmin" ? "Super Admin" : "Member"} · Account</div>
+              <div className="text-[11px] text-ink-soft">{user.role === "superadmin" ? "Super Admin" : "Member"} · Account</div>
             </button>
             <button
               type="button"
@@ -241,7 +244,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                   .catch(() => toast.error("Could not sign out"))
                   .finally(() => setSigningOut(false));
               }}
-              className="ml-auto rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+              className="ml-auto rounded-lg p-1.5 text-ink-soft hover:bg-ink/[0.06] hover:text-ink"
               aria-label="Sign out"
             >
               <LogOut size={16} />
@@ -269,7 +272,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <HeaderActionsContext.Provider value={setHeaderActions}>
       <div className="min-h-screen bg-paper text-ink antialiased">
         <div className="flex min-h-screen">
-          <aside className="sticky top-0 hidden h-screen w-[252px] shrink-0 flex-col self-start bg-sidebar-chrome text-white md:flex">
+          <aside className="sticky top-0 hidden h-screen w-[252px] shrink-0 flex-col self-start border-r border-line bg-sidebar-chrome text-ink md:flex">
             <SidebarContent />
           </aside>
 
@@ -277,7 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Dialog.Portal>
               <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50 md:hidden" />
               <Dialog.Content
-                className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-sidebar-chrome text-white md:hidden"
+                className="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col border-r border-line bg-sidebar-chrome text-ink md:hidden"
                 aria-describedby={undefined}
               >
                 <Dialog.Title className="sr-only">Navigation</Dialog.Title>
@@ -285,7 +288,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <button
                     type="button"
                     aria-label="Close navigation"
-                    className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
+                    className="absolute right-3 top-3 z-10 rounded-lg p-1.5 text-ink-soft hover:bg-ink/[0.06] hover:text-ink"
                   >
                     <X size={18} />
                   </button>
@@ -362,7 +365,7 @@ export function PrimaryButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-9 items-center rounded-lg bg-accent px-4 text-[12.5px] font-medium text-paper transition-all hover:-translate-y-0.5 active:translate-y-0 focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45 disabled:hover:translate-y-0"
+      className="inline-flex h-9 items-center rounded-md bg-accent px-3 text-[14px] font-medium text-white transition-colors hover:bg-accent-hover focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45"
     >
       {children}
     </button>
@@ -385,7 +388,7 @@ export function GhostButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-9 items-center rounded-lg border border-line bg-panel px-3.5 text-[12px] font-medium transition-all hover:border-accent/40 hover:bg-panel/70 focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45"
+      className="inline-flex h-9 items-center rounded-md border border-line bg-panel px-3 text-[14px] font-medium text-ink-soft transition-colors hover:bg-ink/[0.04] hover:text-ink focus-visible:ring-2 focus-visible:ring-accent/70 disabled:pointer-events-none disabled:opacity-45"
     >
       {children}
     </button>

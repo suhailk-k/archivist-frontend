@@ -13,6 +13,7 @@ import {
 import { Field, Modal, SelectInput } from "@/components/forms";
 import { Empty } from "@/components/kit";
 import { useOrgData, useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 import type { Credential, ID } from "@/lib/types";
 
 export const Route = createFileRoute("/credentials")({
@@ -34,6 +35,7 @@ function CredentialsPage() {
   const { credentials, projects } = useOrgData();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
+  const { canEditCredentials } = usePermissions();
   const [scope, setScope] = useState<string>(ORG_SCOPE);
   const [form, setForm] = useState<CredentialFormState>(EMPTY_CREDENTIAL_FORM);
 
@@ -77,7 +79,7 @@ function CredentialsPage() {
       <PageHeader
         title="Credentials"
         crumb={`${org?.name ?? ""} · ${credentials.length} total`}
-        action={<PrimaryButton onClick={openCreate}>+ Add credential</PrimaryButton>}
+        action={canEditCredentials ? <PrimaryButton onClick={openCreate}>+ Add credential</PrimaryButton> : undefined}
       />
 
       <div className="space-y-5 px-6 py-7 md:px-8">

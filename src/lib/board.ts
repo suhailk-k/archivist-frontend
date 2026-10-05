@@ -306,9 +306,9 @@ export function applyTaskPatch(task: Task, patch: Partial<Task>, now: string): T
         : {};
   const next: Task = { ...task, ...synced, ...statusFields };
   if (synced.projectId === undefined || synced.projectId === task.projectId) return next;
-  // Numbers and labels belong to a project: the server numbers the task in its new project.
+  // Numbers, labels and the parent belong to a project: the server numbers the task in its new project.
   const { number: _oldNumber, ...moved } = next;
-  return { ...moved, labels: [] };
+  return { ...moved, labels: [], parentId: null };
 }
 
 export interface MoveRequest extends MoveTarget {

@@ -10,6 +10,7 @@ import { relativeTime } from "@/components/kit";
 import { fileUrl } from "@/lib/api-client";
 import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 import type { Doc, ID, Member } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -66,6 +67,7 @@ function plural(count: number, word: string): string {
 /** A project's Documents tab: searchable, kind-filtered cards showing notes, attachments and links. */
 export function ProjectDocs({ projectId, orgId }: ProjectDocsProps) {
   const { db, removeDoc } = useStore();
+  const { canEditDocuments } = usePermissions();
   const members = db.members.filter((m) => m.orgId === orgId);
   const docs = useMemo(
     () => db.docs.filter((d) => d.projectId === projectId).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
@@ -118,11 +120,13 @@ export function ProjectDocs({ projectId, orgId }: ProjectDocsProps) {
               className="w-full rounded-lg border border-line bg-panel py-1.5 pl-8 pr-3 text-[12.5px] outline-none focus:border-accent focus:ring-2 focus:ring-accent/15"
             />
           </label>
+          {canEditDocuments ? (
           <PrimaryButton onClick={() => setCreating(true)}>
             <span className="inline-flex items-center gap-1.5">
               <Plus size={14} /> New document
             </span>
           </PrimaryButton>
+          ) : null}
         </div>
         {kindCounts.length > 1 ? (
           <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Filter by kind">
@@ -199,6 +203,7 @@ interface DocCardProps {
 }
 
 function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
+  const { canEditDocuments } = usePermissions();
   const Icon = docIcon(doc);
   return (
     <li className="group rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/30">
@@ -234,6 +239,7 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end justify-between gap-2">
+          {canEditDocuments ? (
           <div className="flex items-center gap-0.5 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
             <IconAction label={`Edit ${doc.title}`} onClick={onEdit} className="hover:text-accent">
               <Pencil size={13} />
@@ -242,6 +248,7 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
               <Trash2 size={13} />
             </IconAction>
           </div>
+          ) : null}
           <div className="flex items-center gap-1.5 text-[11px] text-ink-soft">
             {owner ? (
               <>

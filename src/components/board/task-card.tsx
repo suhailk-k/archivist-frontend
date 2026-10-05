@@ -67,8 +67,8 @@ export function TaskCard({ task, taskKey, projectLabels, membersById, today, onO
       onClick={() => onOpen?.(task.id)}
       onKeyUp={suppressSpaceClick}
       className={cn(
-        "block w-full touch-manipulation select-none rounded-lg border border-line bg-panel px-3 pb-2.5 pt-3 text-left outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--panel)_94%,var(--ink))] focus-visible:ring-2 focus-visible:ring-accent/50",
-        isOverlay && "cursor-grabbing shadow-xl shadow-ink/15 ring-1 ring-accent/25",
+        "block w-full touch-manipulation select-none rounded-lg bg-panel px-3 pb-2.5 pt-3 text-left shadow-raised outline-none transition-colors hover:bg-sunken focus-visible:ring-2 focus-visible:ring-accent",
+        isOverlay && "cursor-grabbing rotate-[2deg] shadow-overlay",
         className,
       )}
     >
@@ -86,7 +86,7 @@ export function TaskCard({ task, taskKey, projectLabels, membersById, today, onO
       <div className="mt-2.5 flex items-center gap-1.5">
         <SquareCheck size={16} className="shrink-0 text-accent" aria-hidden="true" />
         {taskKey ? (
-          <span className={cn("font-mono text-[12px] font-medium text-ink-soft", task.status === "done" && "line-through")}>{taskKey}</span>
+          <span className={cn("text-[12px] font-medium text-ink-soft", task.status === "done" && "line-through")}>{taskKey}</span>
         ) : (
           <span className="text-[12px] text-ink-soft">No project</span>
         )}

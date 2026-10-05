@@ -259,6 +259,8 @@ test("applyTaskPatch moving projects drops the old number and labels", () => {
   assert.equal(moved.projectId, "p2");
   assert.equal("number" in moved, false);
   assert.deepEqual(moved.labels, []);
+  const child = applyTaskPatch(task({ projectId: "p1", parentId: "story" }), { projectId: "p2" }, NOW);
+  assert.equal(child.parentId, null);
   const same = applyTaskPatch(task({ projectId: "p1", number: 4, labels: ["l1"] }), { projectId: "p1", title: "x" }, NOW);
   assert.equal(same.number, 4);
   assert.deepEqual(same.labels, ["l1"]);
