@@ -4,6 +4,8 @@ import { GhostButton, PrimaryButton } from "@/components/app-shell";
 import { DocUploadField, type UploadedFileInfo } from "@/components/doc-upload-field";
 import { Field, Modal, SelectInput, TextArea, TextInput } from "@/components/forms";
 import { useStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth";
+import { canMoveRecord } from "@/lib/record-access";
 import type { Doc, ID, Member, Project } from "@/lib/types";
 
 const HTTP_LINK = /^https?:\/\/\S+$/i;
@@ -29,6 +31,8 @@ interface DocFormProps {
   initialFile: UploadedFileInfo | null;
   members: Member[];
   projects?: Project[] | undefined;
+  /** False for shared editors: only the creator or a superadmin can move a document. */
+  canMove?: boolean;
   onClose: () => void;
   onSubmit: (fields: DocFields, projectId: ID | null) => void;
 }
@@ -39,7 +43,7 @@ function fileInfoOf(doc: Doc): UploadedFileInfo | null {
 }
 
 /** Shared title/kind/owner/link/file/notes form used for both creating and editing a document. */
-function DocForm({ heading, submitLabel, orgId, initial, initialFile, members, projects, onClose, onSubmit }: DocFormProps) {
+function DocForm({ heading, submitLabel, orgId, initial, initialFile, members, projects, canMove = true, onClose, onSubmit }: DocFormProps) {
   const [form, setForm] = useState(initial);
   const [file, setFile] = useState<UploadedFileInfo | null>(initialFile);
 
@@ -99,7 +103,12 @@ function DocForm({ heading, submitLabel, orgId, initial, initialFile, members, p
         </div>
         {projects ? (
           <Field label="Project">
-            <SelectInput value={form.projectId} onChange={(e) => setForm({ ...form, projectId: e.target.value })}>
+            <SelectInput
+              value={form.projectId}
+              onChange={(e) => setForm({ ...form, projectId: e.target.value })}
+              disabled={!canMove}
+              title={canMove ? undefined : "Only the creator or a superadmin can move this document"}
+            >
               <option value="">No project</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -107,6 +116,7 @@ function DocForm({ heading, submitLabel, orgId, initial, initialFile, members, p
                 </option>
               ))}
             </SelectInput>
+            {canMove ? null : <p className="mt-1 text-[11px] text-ink-soft">Only the creator or a superadmin can move this document.</p>}
           </Field>
         ) : null}
         <Field label="Link">
@@ -143,6 +153,7 @@ interface EditDocModalProps {
 
 export function EditDocModal({ doc, onClose, members, projects }: EditDocModalProps) {
   const { updateDoc } = useStore();
+  const { user } = useAuth();
   if (!doc) return null;
   return (
     // Keyed so reopening on another document re-seeds the form.
@@ -162,6 +173,7 @@ export function EditDocModal({ doc, onClose, members, projects }: EditDocModalPr
       initialFile={fileInfoOf(doc)}
       members={members}
       projects={projects}
+      canMove={canMoveRecord(doc, user)}
       onClose={onClose}
       onSubmit={(fields, projectId) => {
         updateDoc(doc.id, { ...fields, ...(projects ? { projectId } : {}) });

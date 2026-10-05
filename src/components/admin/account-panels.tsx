@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { GhostButton, PrimaryButton } from "@/components/app-shell";
 import { Field, SelectInput, TextInput } from "@/components/forms";
 import { AccessEditor } from "@/components/admin/access-editor";
+import { RecordAccessEditor } from "@/components/admin/record-access-editor";
+import type { Credential, Doc } from "@/lib/types";
 import { sameAccess, type AdminUser, type UserAccess } from "@/lib/access-rules";
 import { changeUserPassword, replaceUserAccess, setUserMemberLink } from "@/lib/admin-api";
 import { ApiRequestError } from "@/lib/api-client";
@@ -26,12 +28,14 @@ interface AccessPanelProps {
   target: AdminUser;
   organisations: Array<{ id: string; name: string }>;
   projects: Array<{ id: string; name: string; orgId: string }>;
+  docs: Doc[];
+  credentials: Credential[];
   onSaved: () => Promise<void>;
   onDirtyChange: (dirty: boolean) => void;
 }
 
 /** Edits one member's grants with an explicit unsaved state, so nothing is lost or saved by accident. */
-export function AccessPanel({ target, organisations, projects, onSaved, onDirtyChange }: AccessPanelProps) {
+export function AccessPanel({ target, organisations, projects, docs, credentials, onSaved, onDirtyChange }: AccessPanelProps) {
   const [draft, setDraft] = useState<UserAccess>(target.access);
   const [busy, setBusy] = useState(false);
   const dirty = !sameAccess(draft, target.access);
@@ -72,6 +76,16 @@ export function AccessPanel({ target, organisations, projects, onSaved, onDirtyC
         An organisation grant shows its org-wide records. Projects must be granted individually — ticking a project grants its organisation too.
       </p>
       <AccessEditor access={draft} onChange={setDraft} organisations={organisations} projects={projects} disabled={busy} />
+      <RecordAccessEditor
+        userId={target.id}
+        access={draft}
+        onChange={(shares) => setDraft((current) => ({ ...current, shares }))}
+        docs={docs}
+        credentials={credentials}
+        organisations={organisations}
+        projects={projects}
+        disabled={busy}
+      />
       <div className="flex justify-end gap-2">
         <GhostButton onClick={() => setDraft(target.access)} disabled={!dirty || busy}>
           Reset

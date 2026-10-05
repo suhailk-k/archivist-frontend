@@ -13,7 +13,7 @@ export function Field({ label, children }: { label: string; children: ReactNode 
 }
 
 const base =
-  "w-full rounded-lg border border-line bg-panel px-3 py-2 text-[13px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-accent focus:ring-2 focus:ring-accent/15";
+  "w-full rounded-lg border border-line bg-panel px-3 py-2 text-[13px] text-ink outline-none transition-colors placeholder:text-ink-soft/70 focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:bg-ink/[0.03] disabled:text-ink-soft";
 
 export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(base, props.className)} />;

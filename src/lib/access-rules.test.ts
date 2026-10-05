@@ -81,3 +81,12 @@ test("filterUsers matches search text and status filters", () => {
   assert.deepEqual(filterUsers(users, "", "no-access").map((u) => u.id), ["b"]);
   assert.deepEqual(filterUsers(users, "", "unlinked").map((u) => u.id), ["b"]);
 });
+
+test("sameAccess compares record shares regardless of order", () => {
+  const base = { organisationIds: ["o"], projectIds: [] };
+  const a = { ...base, shares: [{ entity: "docs" as const, recordId: "d1", level: "view" as const }, { entity: "credentials" as const, recordId: "c1", level: "edit" as const }] };
+  const b = { ...base, shares: [...a.shares].reverse() };
+  assert.equal(sameAccess(a, b), true);
+  assert.equal(sameAccess(a, { ...base, shares: [{ ...a.shares[0]!, level: "edit" as const }, a.shares[1]!] }), false);
+  assert.equal(sameAccess(base, { ...base, shares: [] }), true);
+});

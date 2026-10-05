@@ -14,6 +14,8 @@ import { Field, Modal, SelectInput } from "@/components/forms";
 import { Empty } from "@/components/kit";
 import { useOrgData, useStore } from "@/lib/store";
 import { usePermissions } from "@/lib/use-permissions";
+import { useAuth } from "@/lib/auth";
+import { canMoveRecord } from "@/lib/record-access";
 import type { Credential, ID } from "@/lib/types";
 
 export const Route = createFileRoute("/credentials")({
@@ -36,6 +38,7 @@ function CredentialsPage() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<ID | null>(null);
   const { canEditCredentials } = usePermissions();
+  const { user } = useAuth();
   const [scope, setScope] = useState<string>(ORG_SCOPE);
   const [form, setForm] = useState<CredentialFormState>(EMPTY_CREDENTIAL_FORM);
 
@@ -69,6 +72,9 @@ function CredentialsPage() {
     setOpen(false);
   };
 
+  const editingCredential = editingId ? credentials.find((c) => c.id === editingId) : undefined;
+  // Shared editors can change a credential but not move it out of the scope it was shared in.
+  const canMoveEditing = !editingCredential || canMoveRecord(editingCredential, user);
   const orgCredentials = credentials.filter((c) => c.projectId === null);
   const projectGroups = projects
     .map((project) => ({ project, items: credentials.filter((c) => c.projectId === project.id) }))
@@ -126,7 +132,12 @@ function CredentialsPage() {
       <Modal open={open} title={editingId ? "Edit credential" : "Add credential"} onClose={() => setOpen(false)}>
         <div className="space-y-3">
           <Field label="Scope">
-            <SelectInput value={scope} onChange={(e) => setScope(e.target.value)}>
+            <SelectInput
+              value={scope}
+              onChange={(e) => setScope(e.target.value)}
+              disabled={!canMoveEditing}
+              title={canMoveEditing ? undefined : "Only the creator or a superadmin can move this credential"}
+            >
               <option value={ORG_SCOPE}>Organisation-wide</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
@@ -134,6 +145,7 @@ function CredentialsPage() {
                 </option>
               ))}
             </SelectInput>
+            {canMoveEditing ? null : <p className="mt-1 text-[11px] text-ink-soft">Only the creator or a superadmin can move this credential.</p>}
           </Field>
           <CredentialFormFields
             form={form}

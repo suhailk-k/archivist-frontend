@@ -107,13 +107,16 @@ function ShareAccessModal({ entity, target, onClose }: ShareAccessButtonProps & 
 
 function CreatorNote({ users, createdById }: { users: AdminUser[]; createdById: ID | null | undefined }) {
   const creator = createdById ? users.find((entry) => entry.id === createdById) : undefined;
-  return (
-    <p className="text-[12px] text-ink-soft">
-      {creator
+  // undefined: created in this session and not reloaded yet, so it is the viewer's own record.
+  const note =
+    createdById === undefined
+      ? "Created by you. The creator and superadmins always have full access."
+      : creator
         ? `Created by ${creator.displayName}. The creator and superadmins always have full access.`
-        : "Created before access control. Only superadmins can see it until you share it."}
-    </p>
-  );
+        : createdById === null
+          ? "Created before access control. Only superadmins can see it until you share it."
+          : "Created by a deleted account. Only superadmins can see it until you share it.";
+  return <p className="text-[12px] text-ink-soft">{note}</p>;
 }
 
 interface ShareListProps {

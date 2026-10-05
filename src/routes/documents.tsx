@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Pencil } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader, PrimaryButton } from "@/components/app-shell";
 import { DocUploadField, type UploadedFileInfo } from "@/components/doc-upload-field";
@@ -140,13 +140,7 @@ function Documents() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-[11px] text-accent">▤</span>
-                  <input
-                    value={d.title}
-                    onChange={(e) => updateDoc(d.id, { title: e.target.value })}
-                    readOnly={!canEdit}
-                    aria-label="Document title"
-                    className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-medium outline-none focus:text-accent"
-                  />
+                  <DocTitleInput title={d.title} isEditable={canEdit} onCommit={(title) => updateDoc(d.id, { title })} />
                   <span className="font-mono text-[11px] text-ink-soft">{d.kind}</span>
                   {d.fileId ? (
                     <a href={fileUrl(d.fileId)} target="_blank" rel="noreferrer" className="font-mono text-[11px] text-accent hover:underline">
@@ -188,5 +182,58 @@ function Documents() {
         </Panel>
       </div>
     </>
+  );
+}
+
+interface DocTitleInputProps {
+  title: string;
+  isEditable: boolean;
+  onCommit: (title: string) => void;
+}
+
+/**
+ * Inline rename. Saves once on blur or Enter (Escape reverts) instead of on every keystroke, which
+ * used to send a save and an activity entry per character.
+ */
+function DocTitleInput({ title, isEditable, onCommit }: DocTitleInputProps) {
+  const [draft, setDraft] = useState(title);
+  const [isFocused, setFocused] = useState(false);
+  const isCancelled = useRef(false);
+  const shown = isFocused ? draft : title;
+
+  const commit = () => {
+    setFocused(false);
+    if (isCancelled.current) {
+      isCancelled.current = false;
+      return;
+    }
+    const next = draft.trim();
+    if (!next) {
+      toast.error("A document needs a title");
+      return;
+    }
+    if (next !== title) onCommit(next);
+  };
+
+  return (
+    <input
+      value={shown}
+      readOnly={!isEditable}
+      aria-label="Document title"
+      onFocus={() => {
+        setDraft(title);
+        setFocused(true);
+      }}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => (isEditable ? commit() : setFocused(false))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+        if (e.key === "Escape") {
+          isCancelled.current = true;
+          e.currentTarget.blur();
+        }
+      }}
+      className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-medium outline-none focus:text-accent"
+    />
   );
 }

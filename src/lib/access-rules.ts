@@ -1,11 +1,14 @@
 import type { SessionUser } from "./auth";
 import { describePermissions, samePermissions, type Permissions } from "./permissions";
+import type { UserShare } from "./record-access";
 
 export interface UserAccess {
   organisationIds: string[];
   projectIds: string[];
   /** Document and credential levels; absent means full access (older accounts, new invites). */
   permissions?: Permissions;
+  /** Documents and credentials shared with this user. Absent from older backends. */
+  shares?: UserShare[];
 }
 
 export interface AdminUser extends SessionUser {
@@ -53,8 +56,15 @@ export function setOrganisationProjects(access: UserAccess, organisationId: stri
 
 export function sameAccess(a: UserAccess, b: UserAccess): boolean {
   const same = (x: string[], y: string[]) => x.length === y.length && x.every((value) => y.includes(value));
-  return same(a.organisationIds, b.organisationIds) && same(a.projectIds, b.projectIds) && samePermissions(a.permissions, b.permissions);
+  return (
+    same(a.organisationIds, b.organisationIds) &&
+    same(a.projectIds, b.projectIds) &&
+    samePermissions(a.permissions, b.permissions) &&
+    same(shareKeys(a.shares), shareKeys(b.shares))
+  );
 }
+
+const shareKeys = (shares: UserShare[] | undefined): string[] => (shares ?? []).map((share) => `${share.entity}:${share.recordId}:${share.level}`);
 
 export function hasNoAccess(user: AdminUser): boolean {
   return user.role !== "superadmin" && user.access.organisationIds.length === 0;

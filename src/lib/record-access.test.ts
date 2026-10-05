@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { AdminUser } from "./access-rules.ts";
-import { canEditRecord, setShareLevel, shareBlocker, shareCandidates } from "./record-access.ts";
+import { canEditRecord, canMoveRecord, setShareLevel, setUserShareLevel, shareBlocker, shareCandidates } from "./record-access.ts";
 
 function user(overrides: Partial<AdminUser>): AdminUser {
   return {
@@ -61,4 +61,21 @@ test("setShareLevel adds, changes and removes without mutating the input", () =>
   assert.deepEqual(setShareLevel(added, "u1", "edit")[0], { userId: "u1", level: "edit" });
   assert.deepEqual(setShareLevel(added, "u1", "none"), [{ userId: "u2", level: "edit" }]);
   assert.deepEqual(start, [{ userId: "u1", level: "view" }]);
+});
+
+test("setUserShareLevel keys shares by entity and record", () => {
+  const start = [{ entity: "docs" as const, recordId: "d1", level: "view" as const }];
+  const added = setUserShareLevel(start, "credentials", "d1", "edit");
+  assert.equal(added.length, 2);
+  assert.deepEqual(setUserShareLevel(added, "docs", "d1", "edit")[0], { entity: "docs", recordId: "d1", level: "edit" });
+  assert.deepEqual(setUserShareLevel(added, "docs", "d1", "none"), [{ entity: "credentials", recordId: "d1", level: "edit" }]);
+  assert.equal(start.length, 1);
+});
+
+test("canMoveRecord: creators, superadmins and records created this session", () => {
+  assert.equal(canMoveRecord({ createdById: "u1" }, { id: "u1", role: "member" }), true);
+  assert.equal(canMoveRecord({ createdById: "u2" }, { id: "u1", role: "member" }), false);
+  assert.equal(canMoveRecord({ createdById: null }, { id: "u1", role: "superadmin" }), true);
+  assert.equal(canMoveRecord({}, { id: "u1", role: "member" }), true);
+  assert.equal(canMoveRecord({ createdById: "u1" }, null), false);
 });

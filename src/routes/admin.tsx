@@ -106,6 +106,8 @@ function AdminPage() {
                 target={selected}
                 organisations={db.organisations}
                 projects={db.projects}
+                docs={db.docs}
+                credentials={db.credentials}
                 onSaved={reload}
                 onDirtyChange={setAccessDirty}
               />
