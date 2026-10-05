@@ -1,24 +1,31 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ChevronDown, Ellipsis, Link2, SquareCheck, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmModal } from "@/components/forms";
 import { taskKey } from "@/lib/board";
+import { childrenOf, parentCandidates, parentOf } from "@/lib/hierarchy";
 import type { ID, LabelColor, Member, Project, Task } from "@/lib/types";
 import { menuContent, menuItem } from "./menu-styles";
+import { TaskChildren } from "./task-children";
 import { DetailsPanel, StatusButton } from "./task-detail-fields";
 
 export interface TaskDetailDialogProps {
   /** The open task; the dialog is closed while this is undefined. */
   task: Task | undefined;
+  /** Every task in scope, for the parent link and child list. */
+  tasks: readonly Task[];
   project: Project | undefined;
   /** The org's projects, for moving the task. */
   projects: readonly Project[];
   members: readonly Member[];
   canManageLabels: boolean;
   onClose: () => void;
+  /** Switches the dialog to another work item (parent or child). */
+  onOpenTask: (id: ID) => void;
   onUpdate: (id: ID, patch: Partial<Task>) => void;
+  onCreateChild: (parent: Task, title: string) => void;
   onDelete: (id: ID) => void;
   onCreateLabel: (projectId: ID, name: string, color: LabelColor) => ID;
 }
@@ -52,11 +59,22 @@ export function TaskDetailDialog(props: TaskDetailDialogProps) {
   );
 }
 
-function DialogBody({ task, project, projects, members, canManageLabels, onClose, onUpdate, onDelete, onCreateLabel }: TaskDetailDialogProps & { task: Task }) {
+function DialogBody(props: TaskDetailDialogProps & { task: Task }) {
+  const { task, tasks, project, projects, members, canManageLabels, onClose, onOpenTask, onUpdate, onCreateChild, onDelete, onCreateLabel } = props;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(true);
   const update = (patch: Partial<Task>) => onUpdate(task.id, patch);
   const key = project ? taskKey(project.key, task.number) : null;
+  const tasksById = useMemo(() => new Map(tasks.map((item) => [item.id, item])), [tasks]);
+  const membersById = useMemo(() => new Map(members.map((member) => [member.id, member])), [members]);
+  const parent = parentOf(task, tasksById);
+  const children = useMemo(() => childrenOf(task.id, tasks), [task.id, tasks]);
+  const parentOptions = useMemo(() => parentCandidates(task, tasks), [task, tasks]);
+  const keyOf = (item: Task): string | null => {
+    const owner = projects.find((candidate) => candidate.id === item.projectId);
+    return owner ? taskKey(owner.key, item.number) : null;
+  };
+  const parentKey = parent ? keyOf(parent) : null;
 
   const copyLink = async () => {
     try {
@@ -73,6 +91,20 @@ function DialogBody({ task, project, projects, members, canManageLabels, onClose
         <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[13.5px] text-ink-soft">
           {project ? <span className="truncate">{project.name}</span> : <span>No project</span>}
           <span aria-hidden="true">/</span>
+          {parent ? (
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenTask(parent.id)}
+                title={parent.title}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-sm hover:text-accent hover:underline"
+              >
+                <SquareCheck size={16} className="text-accent" aria-hidden="true" />
+                {parentKey ?? parent.title}
+              </button>
+              <span aria-hidden="true">/</span>
+            </>
+          ) : null}
           <span className="inline-flex shrink-0 items-center gap-1.5 font-medium text-ink">
             <SquareCheck size={16} className="text-accent" aria-hidden="true" />
             {key ?? "Work item"}
@@ -104,6 +136,10 @@ function DialogBody({ task, project, projects, members, canManageLabels, onClose
         <div className="min-w-0 space-y-7">
           <TitleField task={task} onUpdate={update} />
           <DescriptionField task={task} onUpdate={update} />
+          {/* One level only: a child can't have children of its own. */}
+          {parent || !task.projectId ? null : (
+            <TaskChildren items={children} membersById={membersById} keyOf={keyOf} onOpen={onOpenTask} onCreate={(title) => onCreateChild(task, title)} />
+          )}
         </div>
 
         <aside className="min-w-0 space-y-3 md:pt-1">
@@ -126,6 +162,9 @@ function DialogBody({ task, project, projects, members, canManageLabels, onClose
                   projects={projects}
                   labels={project?.labels ?? null}
                   canCreateLabels={canManageLabels}
+                  parent={parent}
+                  parentOptions={parentOptions}
+                  keyOf={keyOf}
                   onUpdate={update}
                   onCreateLabel={(name, color) => (project ? onCreateLabel(project.id, name, color) : "")}
                 />

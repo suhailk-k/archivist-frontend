@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Elance-style workspace design system.
- * Light paper surfaces, slate ink, indigo accent, dark sidebar chrome.
+ * Atlassian (Jira) style workspace design system.
+ * White surfaces, sunken grey columns, neutral ink, #1868DB blue accent, light sidebar.
  */
 
 @theme inline {
@@ -17,12 +17,19 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Atlassian Sans", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Ubuntu, "Helvetica Neue", sans-serif;
+  --font-display: var(--font-sans);
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --shadow-raised: 0 1px 1px #1e1f2140, 0 0 1px #1e1f214f;
+  --shadow-overlay: 0 8px 12px #1e1f2126, 0 0 1px #1e1f214f;
 
   --color-paper: var(--paper);
   --color-panel: var(--panel);
+  --color-sunken: var(--sunken);
+  --color-accent-hover: var(--accent-hover);
+  --color-verd-soft: var(--verd-soft);
+  --color-verd-ink: var(--verd-ink);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
   --color-line: var(--line);
@@ -68,19 +75,24 @@
 }
 
 :root {
-  --radius: 0.75rem;
+  --radius: 0.5rem;
 
-  --paper: oklch(0.98 0.005 260);
-  --panel: oklch(1 0 0);
-  --ink: oklch(0.22 0.02 264);
-  --ink-soft: oklch(0.52 0.02 264);
-  --line: oklch(0.9 0.012 264);
-  --accent: oklch(0.53 0.23 276);
-  --accent-soft: oklch(0.94 0.035 276);
-  --verd: oklch(0.6 0.14 163);
-  --amber: oklch(0.62 0.15 78);
-  --rose: oklch(0.58 0.19 20);
-  --sidebar-chrome: #111827;
+  /* Values sampled from Jira's --ds-* tokens (light theme). */
+  --paper: #ffffff;
+  --panel: #ffffff;
+  --sunken: #f8f8f8;
+  --ink: #292a2e;
+  --ink-soft: #505258;
+  --line: #dddee1;
+  --accent: #1868db;
+  --accent-hover: #1558bc;
+  --accent-soft: #e9f2fe;
+  --verd: #4c6b1f;
+  --verd-soft: #d3f1a7;
+  --verd-ink: #37471f;
+  --amber: #e06c00;
+  --rose: #c9372c;
+  --sidebar-chrome: #ffffff;
 
   --background: var(--paper);
   --foreground: var(--ink);
@@ -92,7 +104,7 @@
   --primary-foreground: var(--paper);
   --secondary: var(--accent-soft);
   --secondary-foreground: var(--accent);
-  --muted: oklch(0.96 0.006 264);
+  --muted: var(--sunken);
   --muted-foreground: var(--ink-soft);
   --accent-foreground: var(--paper);
   --destructive: var(--rose);

@@ -75,6 +75,8 @@ export interface Task {
   assigneeIds: ID[];
   /** Day the assignee plans to work on it (YYYY-MM-DD), separate from the dueDate deadline; "" = unscheduled. */
   plannedFor: string;
+  /** Parent work item in the same project (one level, Jira-style); absent or null for top-level items. */
+  parentId?: ID | null;
   /** Free-form details edited in the board's task sheet; older records have none. */
   notes?: string;
   /** ISO timestamp set when the task is checked off; "" while open. */

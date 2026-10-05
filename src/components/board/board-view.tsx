@@ -15,9 +15,10 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { bySortOrder, taskKey, type MoveRequest } from "@/lib/board";
+import { cn } from "@/lib/utils";
 import type { ID, Member, Project, Task, TaskStatus } from "@/lib/types";
-import { BoardColumn, type ColumnCard } from "./board-column";
-import { STATUS_META, STATUS_ORDER, columnDropId } from "./status-meta";
+import { BoardColumn, type ColumnCard, type ColumnVariant } from "./board-column";
+import { COLUMN_GAP, STATUS_META, STATUS_ORDER, columnDropId } from "./status-meta";
 import { TaskCard } from "./task-card";
 
 type Columns = Record<TaskStatus, ID[]>;
@@ -46,6 +47,8 @@ export interface BoardViewProps {
   onMove: (id: ID, request: MoveRequest) => void;
   onOpen: (id: ID) => void;
   onCreate?: ((status: TaskStatus, title: string) => void) | undefined;
+  /** "lane": one swimlane's row of column bodies; the parent supplies headers and scrolling. */
+  variant?: ColumnVariant;
 }
 
 function groupByStatus(tasks: readonly Task[]): Columns {
@@ -68,7 +71,8 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
-export function BoardView({ tasks, projectsById, members, onMove, onOpen, onCreate }: BoardViewProps) {
+export function BoardView({ tasks, projectsById, members, onMove, onOpen, onCreate, variant = "full" }: BoardViewProps) {
+  const isLane = variant === "lane";
   const sensors = useSensors(
     useSensor(FinePointerSensor, { activationConstraint: { distance: MOUSE_DRAG_DISTANCE_PX } }),
     useSensor(TouchSensor, { activationConstraint: { delay: LONG_PRESS_MS, tolerance: TOUCH_TOLERANCE_PX } }),
@@ -165,7 +169,7 @@ export function BoardView({ tasks, projectsById, members, onMove, onOpen, onCrea
     return next;
   };
 
-  const visibleStatuses = STATUS_ORDER.filter((status) => !(hiddenWhenEmpty.has(status) && columns[status].length === 0));
+  const visibleStatuses = isLane ? STATUS_ORDER : STATUS_ORDER.filter((status) => !(hiddenWhenEmpty.has(status) && columns[status].length === 0));
   const hiddenCount = STATUS_ORDER.length - visibleStatuses.length;
   const activeTask = activeId ? tasksById.get(activeId) : undefined;
 
@@ -179,10 +183,17 @@ export function BoardView({ tasks, projectsById, members, onMove, onOpen, onCrea
       onDragEnd={onDragEnd}
       onDragCancel={finishDrag}
     >
-      <div className="flex h-[calc(100dvh-15rem)] min-h-[26rem] snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:snap-none">
+      <div
+        className={cn(
+          "flex",
+          COLUMN_GAP,
+          isLane ? "w-max" : "h-[calc(100dvh-15rem)] min-h-[26rem] snap-x snap-mandatory overflow-x-auto pb-2 md:snap-none",
+        )}
+      >
         {visibleStatuses.map((status) => (
           <BoardColumn
             key={status}
+            variant={variant}
             status={status}
             cards={columns[status].flatMap((id) => {
               const task = tasksById.get(id);
@@ -197,7 +208,7 @@ export function BoardView({ tasks, projectsById, members, onMove, onOpen, onCrea
             onCreate={onCreate}
           />
         ))}
-        {hiddenCount > 0 ? (
+        {hiddenCount > 0 && !isLane ? (
           <button
             type="button"
             onClick={() => setHiddenWhenEmpty(new Set())}

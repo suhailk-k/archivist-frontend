@@ -76,11 +76,16 @@ export interface DetailsPanelProps {
   /** The project's labels; null for tasks outside a project. */
   labels: readonly ProjectLabel[] | null;
   canCreateLabels: boolean;
+  /** The current parent (same project), if any. */
+  parent: Task | undefined;
+  /** Tasks that may become the parent; empty when the task has children or no project. */
+  parentOptions: readonly Task[];
+  keyOf: (task: Task) => string | null;
   onUpdate: (patch: Partial<Task>) => void;
   onCreateLabel: (name: string, color: LabelColor) => ID;
 }
 
-export function DetailsPanel({ task, members, projects, labels, canCreateLabels, onUpdate, onCreateLabel }: DetailsPanelProps) {
+export function DetailsPanel({ task, members, projects, labels, canCreateLabels, parent, parentOptions, keyOf, onUpdate, onCreateLabel }: DetailsPanelProps) {
   return (
     <div className="px-4 pb-4 pt-2">
       <Row label="Assignee">
@@ -111,7 +116,65 @@ export function DetailsPanel({ task, members, projects, labels, canCreateLabels,
       <Row label="Project">
         <ProjectField task={task} projects={projects} onUpdate={onUpdate} />
       </Row>
+      <Row label="Parent">
+        <ParentField parent={parent} options={parentOptions} keyOf={keyOf} onUpdate={onUpdate} />
+      </Row>
     </div>
+  );
+}
+
+const NO_PARENT = "none";
+
+interface ParentFieldProps {
+  parent: Task | undefined;
+  options: readonly Task[];
+  keyOf: (task: Task) => string | null;
+  onUpdate: (patch: Partial<Task>) => void;
+}
+
+/** Jira-style parent picker: one level, same project only (the options are pre-filtered). */
+function ParentField({ parent, options, keyOf, onUpdate }: ParentFieldProps) {
+  if (!parent && options.length === 0) {
+    return <div className={cn(staticCell, placeholder)}>None</div>;
+  }
+  const parentKey = parent ? keyOf(parent) : null;
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger aria-label={`Parent: ${parent?.title ?? "None"}`} className={valueCell}>
+        {parent ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5 rounded-[3px] border border-line px-1.5 text-[12px] leading-5">
+            {parentKey ? <span className="shrink-0 font-medium text-ink-soft">{parentKey}</span> : null}
+            <span className="truncate">{parent.title}</span>
+          </span>
+        ) : (
+          <span className={placeholder}>Add parent</span>
+        )}
+        <ChevronDown size={14} className="ml-auto shrink-0 text-ink-soft" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content align="start" sideOffset={4} className={menuContent}>
+          <DropdownMenu.Label className={menuLabel}>Parent work item</DropdownMenu.Label>
+          <DropdownMenu.RadioGroup
+            value={parent?.id ?? NO_PARENT}
+            onValueChange={(value) => onUpdate({ parentId: value === NO_PARENT ? null : value })}
+          >
+            {options.map((option) => (
+              <DropdownMenu.RadioItem key={option.id} value={option.id} className={menuItem}>
+                <span className="w-14 shrink-0 text-[12px] text-ink-soft">{keyOf(option) ?? ""}</span>
+                <span className="truncate">{option.title}</span>
+                <CheckIndicator />
+              </DropdownMenu.RadioItem>
+            ))}
+            <DropdownMenu.Separator className="my-1 h-px bg-line" />
+            <DropdownMenu.RadioItem value={NO_PARENT} className={menuItem}>
+              <span className="w-14 shrink-0" />
+              No parent
+              <CheckIndicator />
+            </DropdownMenu.RadioItem>
+          </DropdownMenu.RadioGroup>
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
   );
 }
 
