@@ -11,6 +11,8 @@ import { fileUrl } from "@/lib/api-client";
 import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
 import { usePermissions } from "@/lib/use-permissions";
+import { canEditRecord } from "@/lib/record-access";
+import { ShareAccessButton } from "@/components/share-access";
 import type { Doc, ID, Member } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -204,6 +206,7 @@ interface DocCardProps {
 
 function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
   const { canEditDocuments } = usePermissions();
+  const canEdit = canEditRecord(doc, canEditDocuments);
   const Icon = docIcon(doc);
   return (
     <li className="group rounded-xl border border-line bg-panel p-3.5 transition-colors hover:border-accent/30">
@@ -216,6 +219,7 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <h3 className="min-w-0 truncate text-[13.5px] font-semibold text-ink">{doc.title}</h3>
             {doc.kind ? <span className="rounded-md bg-line/20 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft">{doc.kind}</span> : null}
+            {doc._access === "view" ? <span className="rounded-md bg-line/20 px-1.5 py-0.5 font-mono text-[11px] text-ink-soft">View only</span> : null}
           </div>
 
           {doc.notes ? <DocNotes notes={doc.notes} /> : <p className="mt-1 text-[12px] italic text-ink-soft/70">No notes</p>}
@@ -239,16 +243,19 @@ function DocCard({ doc, owner, onEdit, onDelete }: DocCardProps) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end justify-between gap-2">
-          {canEditDocuments ? (
           <div className="flex items-center gap-0.5 transition-opacity md:opacity-0 md:group-focus-within:opacity-100 md:group-hover:opacity-100">
+            <ShareAccessButton entity="docs" target={{ ...doc, label: doc.title }} className="rounded-md p-1.5 text-ink-soft hover:text-accent" />
+            {canEdit ? (
+            <>
             <IconAction label={`Edit ${doc.title}`} onClick={onEdit} className="hover:text-accent">
               <Pencil size={13} />
             </IconAction>
             <IconAction label={`Delete ${doc.title}`} onClick={onDelete} className="hover:text-rose">
               <Trash2 size={13} />
             </IconAction>
+            </>
+            ) : null}
           </div>
-          ) : null}
           <div className="flex items-center gap-1.5 text-[11px] text-ink-soft">
             {owner ? (
               <>

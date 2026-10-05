@@ -1,6 +1,7 @@
 import { apiGet, apiPost } from "./api-client";
 import type { AdminUser, UserAccess } from "./access-rules";
 import type { SessionUser } from "./auth";
+import type { Share, ShareableEntity } from "./record-access";
 
 export type { AdminUser, UserAccess } from "./access-rules";
 
@@ -25,6 +26,14 @@ export const readUserAccess = (userId: string) =>
 
 export const replaceUserAccess = (userId: string, access: UserAccess) =>
   apiPost<UserAccess>("/api/admin/access", { userId, ...access });
+
+/** Who a document or credential is shared with, besides its creator and superadmins. */
+export const readRecordShares = (entity: ShareableEntity, recordId: string) =>
+  apiGet<Share[]>(`/api/admin/shares?entity=${entity}&recordId=${encodeURIComponent(recordId)}`);
+
+/** Replaces the whole share list of one record. */
+export const replaceRecordShares = (entity: ShareableEntity, recordId: string, shares: Share[]) =>
+  apiPost<Share[]>("/api/admin/shares", { entity, recordId, shares });
 
 /** Links a login account to a member profile (what "My Work" uses). Pass null to unlink. */
 export const setUserMemberLink = (userId: string, memberId: string | null) =>

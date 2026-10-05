@@ -1,3 +1,5 @@
+import type { RecordAccessFields } from "./record-access";
+
 export type ID = string;
 
 export type ProjectStatus = "planning" | "in_progress" | "review" | "blocked" | "done";
@@ -102,7 +104,7 @@ export interface Milestone {
   done: boolean;
 }
 
-export interface Doc {
+export interface Doc extends RecordAccessFields {
   id: ID;
   orgId: ID;
   projectId: ID | null;
@@ -141,7 +143,7 @@ export interface Decision {
   date: string;
 }
 
-export interface Credential {
+export interface Credential extends RecordAccessFields {
   id: ID;
   orgId: ID;
   projectId: ID | null;

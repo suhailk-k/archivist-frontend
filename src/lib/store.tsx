@@ -565,7 +565,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const activity = logged(prev, {
             orgId: input.orgId,
             projectId: input.projectId,
-            text: `Document added: ${created.title}`,
+            text: "Document added", // no title: activity is visible to people who can't see the document
             tone: "accent",
           });
           return {
@@ -585,10 +585,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }),
       removeDoc: (id) =>
         apply((prev) => {
-          const removed = prev.docs.find((d) => d.id === id);
-          const commands: Command[] = [drop("docs", id)];
-          if (removed?.fileId) commands.push(drop("files", removed.fileId));
-          return { db: { ...prev, docs: prev.docs.filter((d) => d.id !== id) }, commands };
+          // The backend deletes the attached file with the document once nothing else uses it.
+          const docs = prev.docs.filter((d) => d.id !== id);
+          const fileId = prev.docs.find((d) => d.id === id)?.fileId;
+          const isOrphaned = Boolean(fileId) && !docs.some((d) => d.fileId === fileId);
+          const files = isOrphaned ? prev.files.filter((f) => f.id !== fileId) : prev.files;
+          return { db: { ...prev, docs, files }, commands: [drop("docs", id)] };
         }),
 
       addMeeting: (input) =>
@@ -672,7 +674,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const activity = logged(prev, {
             orgId: input.orgId,
             projectId: input.projectId,
-            text: `Credential added: ${created.name}`,
+            text: "Credential added", // no name: activity is visible to people who can't see the credential
             tone: "accent",
           });
           return {
@@ -687,7 +689,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           // A blank secret means "keep the stored one": it is omitted so the server leaves it untouched.
           const { local: updated, record } = credentialEdit(previous, patch, nowIso());
           const next = prev.credentials.map((c) => (c.id === id ? updated : c));
-          const activity = logged(prev, { orgId: updated.orgId, projectId: updated.projectId, text: `Credential updated: ${updated.name}`, tone: "line" });
+          const activity = logged(prev, { orgId: updated.orgId, projectId: updated.projectId, text: "Credential updated", tone: "line" });
           return {
             db: { ...prev, credentials: next, activity: activity.activity },
             commands: [upsert("credentials", record), activity.command],
@@ -698,7 +700,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const removed = prev.credentials.find((c) => c.id === id);
           const commands: Command[] = [drop("credentials", id)];
           if (!removed) return { db: { ...prev, credentials: prev.credentials.filter((c) => c.id !== id) }, commands };
-          const activity = logged(prev, { orgId: removed.orgId, projectId: removed.projectId, text: `Credential removed: ${removed.name}`, tone: "rose" });
+          const activity = logged(prev, { orgId: removed.orgId, projectId: removed.projectId, text: "Credential removed", tone: "rose" });
           return {
             db: { ...prev, credentials: prev.credentials.filter((c) => c.id !== id), activity: activity.activity },
             commands: [...commands, activity.command],

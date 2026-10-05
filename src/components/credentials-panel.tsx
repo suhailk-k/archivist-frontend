@@ -7,6 +7,8 @@ import { Empty, SecretValue } from "@/components/kit";
 import { isHttpUrl } from "@/lib/project-links";
 import { useStore } from "@/lib/store";
 import { usePermissions } from "@/lib/use-permissions";
+import { canEditRecord } from "@/lib/record-access";
+import { ShareAccessButton } from "@/components/share-access";
 import { CREDENTIAL_CATEGORY_SUGGESTIONS, type Credential, type ID } from "@/lib/types";
 
 export const CREDENTIAL_CATEGORY_SUGGESTIONS_ID = "credential-category-suggestions";
@@ -119,6 +121,7 @@ export function CredentialRow({
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { canEditCredentials, canRevealSecrets } = usePermissions();
+  const canEdit = canEditRecord(credential, canEditCredentials);
 
   return (
     <div className="rounded-xl border border-line bg-panel/40 p-3">
@@ -130,11 +133,14 @@ export function CredentialRow({
               <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[11px] font-medium text-accent">{credential.category}</span>
             ) : null}
             {scopeLabel ? <span className="rounded-md bg-ink/5 px-1.5 py-0.5 text-[11px] font-medium text-ink-soft">{scopeLabel}</span> : null}
+            {credential._access === "view" ? <span className="rounded-md bg-ink/5 px-1.5 py-0.5 text-[11px] font-medium text-ink-soft">View only</span> : null}
           </div>
           {credential.usedFor ? <p className="mt-1 text-[12px] text-ink-soft">Used for: {credential.usedFor}</p> : null}
         </div>
-        {canEditCredentials ? (
         <div className="flex items-center gap-1">
+          <ShareAccessButton entity="credentials" target={{ ...credential, label: credential.name }} />
+          {canEdit ? (
+          <>
           <button
             type="button"
             onClick={onEdit}
@@ -151,8 +157,9 @@ export function CredentialRow({
           >
             <Trash2 size={14} />
           </button>
+          </>
+          ) : null}
         </div>
-        ) : null}
       </div>
       <div className="mt-2 grid gap-x-4 gap-y-1.5 text-[12px] sm:grid-cols-2">
         <div className="flex items-center gap-1.5">
