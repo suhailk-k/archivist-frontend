@@ -14,6 +14,13 @@ export interface Share {
 
 export type ShareableEntity = "docs" | "credentials";
 
+/** One record shared with a given user (the per-user view of the same shares). */
+export interface UserShare {
+  entity: ShareableEntity;
+  recordId: ID;
+  level: ShareLevel;
+}
+
 /** Server-derived fields on documents and credentials. */
 export interface RecordAccessFields {
   /** User id of whoever created the record; null for records that predate creators (superadmin-only). */
@@ -25,6 +32,15 @@ export interface RecordAccessFields {
 /** Editing needs the module level (documents/credentials "edit") and edit access to this record. */
 export function canEditRecord(record: RecordAccessFields, canEditModule: boolean): boolean {
   return canEditModule && (record._access ?? "edit") === "edit";
+}
+
+/**
+ * Only the creator or a superadmin may move a record to another organisation or project (the backend
+ * refuses it for shared editors). A record created in this session has no creator yet and is the user's own.
+ */
+export function canMoveRecord(record: RecordAccessFields, user: { id: ID; role: string } | null): boolean {
+  if (!user) return false;
+  return user.role === "superadmin" || record.createdById === undefined || record.createdById === user.id;
 }
 
 /** People a superadmin can share with: active members other than the creator, by name. */
@@ -56,4 +72,12 @@ export function setShareLevel(shares: Share[], userId: ID, level: ShareLevel | "
   if (level === "none") return shares.filter((share) => share.userId !== userId);
   if (!shares.some((share) => share.userId === userId)) return [...shares, { userId, level }];
   return shares.map((share) => (share.userId === userId ? { userId, level } : share));
+}
+
+/** Returns a new per-user share list with one record's level set; "none" removes it. */
+export function setUserShareLevel(shares: UserShare[], entity: ShareableEntity, recordId: ID, level: ShareLevel | "none"): UserShare[] {
+  const matches = (share: UserShare) => share.entity === entity && share.recordId === recordId;
+  if (level === "none") return shares.filter((share) => !matches(share));
+  if (!shares.some(matches)) return [...shares, { entity, recordId, level }];
+  return shares.map((share) => (matches(share) ? { entity, recordId, level } : share));
 }

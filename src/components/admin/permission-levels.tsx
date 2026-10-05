@@ -23,7 +23,7 @@ export function PermissionLevels({ value, onChange, disabled = false }: Permissi
       <legend className="px-1 text-[13px] font-medium">Permissions</legend>
       <LevelPicker
         label="Documents"
-        hint="Documents and their uploaded files."
+        hint="'View' opens shared documents. 'Edit' can also create documents and change their own or shared-for-edit ones."
         levels={DOCUMENT_LEVELS}
         labels={DOCUMENT_LEVEL_LABEL}
         value={current.documents}
@@ -31,7 +31,7 @@ export function PermissionLevels({ value, onChange, disabled = false }: Permissi
       />
       <LevelPicker
         label="Credentials"
-        hint="'View list' shows names and logins only; 'View + reveal' can also read secrets (each reveal is logged)."
+        hint="'View list' shows names and logins only; 'View + reveal' can also read secrets (each reveal is logged). 'Edit' can also create credentials and change their own or shared-for-edit ones."
         levels={CREDENTIAL_LEVELS}
         labels={CREDENTIAL_LEVEL_LABEL}
         value={current.credentials}
