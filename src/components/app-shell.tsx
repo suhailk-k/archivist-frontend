@@ -27,6 +27,7 @@ import { CommandSearch } from "@/components/command-search";
 import { useAuth } from "@/lib/auth";
 import { buildDailyPlan, todayKey } from "@/lib/daily-plan";
 import { useOrgData, useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -73,6 +74,8 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { db, orgId, setOrgId, org, syncError, refresh } = useStore();
   const { user, logout } = useAuth();
   const data = useOrgData();
+  const { canSeeDocuments, canSeeCredentials } = usePermissions();
+  const hiddenRoutes = new Set<string>([...(canSeeDocuments ? [] : ["/documents"]), ...(canSeeCredentials ? [] : ["/credentials"])]);
   const [signingOut, setSigningOut] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -154,7 +157,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <nav className="flex-1 overflow-y-auto px-4 py-6">
         <div className="px-2 pb-2 text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-soft">Workspace</div>
         <div className="space-y-1">
-          {NAV.map((item) => {
+          {NAV.filter((item) => !hiddenRoutes.has(item.to)).map((item) => {
             const Icon = item.icon;
             const active = item.to === "/" ? pathname === "/" : pathname.startsWith(item.to);
             return (

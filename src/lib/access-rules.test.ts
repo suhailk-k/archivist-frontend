@@ -46,6 +46,19 @@ test("select all / none toggles one organisation's projects", () => {
   assert.deepEqual(none, { organisationIds: ["o1"], projectIds: ["p3"] });
 });
 
+test("grant toggles keep the user's permission levels", () => {
+  const permissions = { documents: "view", credentials: "none" } as const;
+  const access = { organisationIds: ["o1"], projectIds: ["p1"], permissions };
+  assert.equal(toggleOrganisation(access, "o1", projects).permissions, permissions);
+  assert.equal(toggleProject(access, projects[2]!).permissions, permissions);
+});
+
+test("sameAccess compares permission levels too", () => {
+  const grants = { organisationIds: ["a"], projectIds: [] };
+  assert.ok(sameAccess(grants, { ...grants, permissions: { documents: "edit", credentials: "edit" } }));
+  assert.ok(!sameAccess(grants, { ...grants, permissions: { documents: "edit", credentials: "view" } }));
+});
+
 test("sameAccess ignores order", () => {
   assert.ok(sameAccess({ organisationIds: ["a", "b"], projectIds: [] }, { organisationIds: ["b", "a"], projectIds: [] }));
   assert.ok(!sameAccess({ organisationIds: ["a"], projectIds: [] }, { organisationIds: ["a"], projectIds: ["x"] }));

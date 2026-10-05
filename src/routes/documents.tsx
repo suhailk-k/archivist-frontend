@@ -11,6 +11,7 @@ import { DocDownloadButton } from "@/components/doc-download-button";
 import { EditDocModal } from "@/components/edit-doc-modal";
 import { isHttpUrl } from "@/lib/project-links";
 import { useOrgData, useStore } from "@/lib/store";
+import { usePermissions } from "@/lib/use-permissions";
 import type { Doc } from "@/lib/types";
 
 export const Route = createFileRoute("/documents")({
@@ -31,6 +32,7 @@ function Documents() {
   const [query, setQuery] = useState("");
   const [form, setForm] = useState({ title: "", kind: "Spec", link: "", projectId: "", ownerId: "", notes: "" });
   const [uploadedFile, setUploadedFile] = useState<UploadedFileInfo | null>(null);
+  const { canEditDocuments } = usePermissions();
   const [editing, setEditing] = useState<Doc | null>(null);
 
   const visible = docs
@@ -43,6 +45,7 @@ function Documents() {
       <EditDocModal doc={editing} onClose={() => setEditing(null)} members={members} projects={projects} />
 
       <div className="px-6 py-7 md:px-8">
+        {canEditDocuments ? (
         <Panel>
           <PanelHead index="a" title="Add a document" />
           <div className="grid gap-2 px-4 md:grid-cols-3">
@@ -102,6 +105,7 @@ function Documents() {
             </PrimaryButton>
           </div>
         </Panel>
+        ) : null}
 
         <div className="mt-3">
           <TextInput value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search documents…" />
@@ -160,12 +164,16 @@ function Documents() {
               </div>
               <div className="flex w-24 items-center justify-end gap-2 font-mono text-[11px] text-ink-soft">
                 {relativeTime(d.updatedAt)}
+                {canEditDocuments ? (
+                  <>
                 <button onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`} className="hover:text-accent">
                   <Pencil size={12} />
                 </button>
                 <button onClick={() => removeDoc(d.id)} className="hover:text-rose">
                   ✕
                 </button>
+                  </>
+                ) : null}
               </div>
             </div>
           ))}
