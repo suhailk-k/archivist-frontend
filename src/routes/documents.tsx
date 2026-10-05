@@ -12,6 +12,8 @@ import { EditDocModal } from "@/components/edit-doc-modal";
 import { isHttpUrl } from "@/lib/project-links";
 import { useOrgData, useStore } from "@/lib/store";
 import { usePermissions } from "@/lib/use-permissions";
+import { canEditRecord } from "@/lib/record-access";
+import { ShareAccessButton } from "@/components/share-access";
 import type { Doc } from "@/lib/types";
 
 export const Route = createFileRoute("/documents")({
@@ -128,7 +130,9 @@ function Documents() {
               <Empty text="No documents found" />
             </div>
           ) : null}
-          {hydrated && visible.map((d) => (
+          {hydrated && visible.map((d) => {
+            const canEdit = canEditRecord(d, canEditDocuments);
+            return (
             <div
               key={d.id}
               className="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-3 border-b border-line/50 px-4 py-2.5 last:border-b-0 hover:bg-ink/[0.03]"
@@ -139,6 +143,8 @@ function Documents() {
                   <input
                     value={d.title}
                     onChange={(e) => updateDoc(d.id, { title: e.target.value })}
+                    readOnly={!canEdit}
+                    aria-label="Document title"
                     className="min-w-0 flex-1 truncate bg-transparent text-[13px] font-medium outline-none focus:text-accent"
                   />
                   <span className="font-mono text-[11px] text-ink-soft">{d.kind}</span>
@@ -164,7 +170,8 @@ function Documents() {
               </div>
               <div className="flex w-24 items-center justify-end gap-2 font-mono text-[11px] text-ink-soft">
                 {relativeTime(d.updatedAt)}
-                {canEditDocuments ? (
+                <ShareAccessButton entity="docs" target={{ ...d, label: d.title }} className="hover:text-accent" />
+                {canEdit ? (
                   <>
                 <button onClick={() => setEditing(d)} aria-label={`Edit ${d.title}`} className="hover:text-accent">
                   <Pencil size={12} />
@@ -176,7 +183,8 @@ function Documents() {
                 ) : null}
               </div>
             </div>
-          ))}
+            );
+          })}
         </Panel>
       </div>
     </>
